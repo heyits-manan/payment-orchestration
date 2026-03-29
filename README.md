@@ -75,13 +75,14 @@ risk signals.
 2. Run the SQL in [`supabase-schema.sql`](/Users/itsmanan/College/Major%20Project/backend/supabase-schema.sql).
 3. Copy [`backend/.env.example`](/Users/itsmanan/College/Major%20Project/backend/.env.example) to `.env`.
 4. Add:
-   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SUPABASE_TRANSACTIONS_TABLE`.
+   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SUPABASE_TRANSACTIONS_TABLE` / `SUPABASE_GATEWAY_TABLE`.
 5. Restart the backend.
 
 When Supabase is configured, the backend:
 - stores every processed transaction
 - fetches recent user history
 - adds history-based fraud signals such as high velocity, repeated blocked attempts, and unusual amount spikes
+- stores gateway-evaluation snapshots used by the routing engine
 
 ---
 
@@ -105,12 +106,13 @@ curl -X POST http://localhost:3000/process-payment \
 ```json
 {
   "status": "approved",
-  "fraud_score": 0.03,
+  "fraud_score": 0.23,
+  "model_fraud_score": 0.03,
   "prediction": 0,
-  "gateway": "gateway_fast",
+  "gateway": "gateway_alpha",
   "routing_reason": "Balanced cost and success-rate route.",
-  "gateway_score": 0.982,
-  "message": "Transaction Approved — Routed to gateway_fast.",
+  "gateway_score": 1.0214,
+  "message": "Transaction Approved — Routed to gateway_alpha.",
   "transaction": {
     "amount": 150,
     "user_id": "user_123",
@@ -134,11 +136,31 @@ curl http://localhost:3000/health
 curl http://localhost:5001/health
 ```
 
+### Mock Gateway Provider APIs
+
+```bash
+curl -X POST http://localhost:3000/mock-gateways/gateway_alpha \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 2500,
+    "user_id": "user_123",
+    "payment_method": "credit_card",
+    "billing_country": "IN",
+    "ip_country": "IN"
+  }'
+```
+
+Available mock providers:
+- `gateway_alpha`
+- `gateway_orbit`
+- `gateway_flux`
+
 ### Web Demo
 
 Open [http://localhost:3000](http://localhost:3000) in the browser to use the
 checkout-style demo UI. It submits a payment request to Express, shows the
-fraud-analysis stage, and displays the final gateway-routing decision.
+fraud-analysis stage, compares dynamic mock gateway metrics, and displays the
+final gateway-routing decision before redirecting to a mock hosted provider page.
 
 ---
 
@@ -160,7 +182,8 @@ fraud-analysis stage, and displays the final gateway-routing decision.
 4. The Random Forest model returns a fraud probability
 5. If probability > 0.8 → **Transaction Blocked**
 6. If probability ≤ 0.8 → **Transaction Approved**
-7. Approved payments are routed to the best-fit gateway based on risk, amount, and gateway profile
+7. Approved payments are routed to the best-fit gateway based on risk, amount, and live mock provider metrics
+8. The user is redirected to a simulated hosted checkout page for the selected gateway
 
 Note: the fraud model is trained on the public `creditcard.csv` benchmark dataset, whose anonymized PCA features (`V1` to `V28`) are not directly available in a live payment system. For the MVP demo, Express generates a compatible feature vector and uses the fraud score as an input to adaptive gateway routing.
 

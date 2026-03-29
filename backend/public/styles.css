@@ -275,6 +275,64 @@ select:focus {
   padding: 22px;
 }
 
+.gateway-comparison {
+  margin-top: 18px;
+  border-radius: 22px;
+  background: var(--panel-strong);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 22px;
+}
+
+.gateway-comparison.hidden {
+  display: none;
+}
+
+.comparison-head {
+  margin-bottom: 16px;
+}
+
+.comparison-head h3 {
+  margin: 0;
+}
+
+.gateway-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gateway-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gateway-card.selected {
+  border-color: rgba(108, 229, 177, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(108, 229, 177, 0.2);
+}
+
+.gateway-card h4 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.gateway-card dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.gateway-card dt,
+.gateway-card dd {
+  margin: 0;
+}
+
 .result-panel.empty {
   display: grid;
   place-items: center;
@@ -347,6 +405,28 @@ select:focus {
   color: var(--muted);
 }
 
+.redirect-wrap {
+  margin-top: 18px;
+}
+
+.redirect-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #081119;
+  background: linear-gradient(135deg, var(--accent) 0%, #a2efd1 100%);
+  border-radius: 14px;
+  padding: 13px 16px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.redirect-copy {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -384,7 +464,8 @@ select:focus {
   }
 
   .field-grid,
-  .metrics-grid {
+  .metrics-grid,
+  .gateway-cards {
     grid-template-columns: 1fr;
   }
 

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gateway Hosted Checkout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/provider.css" />
+  </head>
+  <body>
+    <main class="provider-shell">
+      <section class="provider-card">
+        <div class="provider-header">
+          <div>
+            <p id="providerTag" class="provider-tag">Hosted Checkout</p>
+            <h1 id="providerTitle">Gateway Provider</h1>
+            <p id="providerCopy" class="provider-copy">
+              Secure payment collection for merchant checkout redirection.
+            </p>
+          </div>
+          <div id="providerBadge" class="provider-badge">LIVE DEMO</div>
+        </div>
+
+        <div class="checkout-grid">
+          <section class="checkout-panel">
+            <p class="section-label">Payment Details</p>
+            <h2>Enter Card Information</h2>
+            <form class="provider-form">
+              <label>
+                <span>Name on Card</span>
+                <input type="text" value="Aarav Sharma" />
+              </label>
+              <label>
+                <span>Card Number</span>
+                <input type="text" value="4111 1111 1111 1111" />
+              </label>
+              <div class="dual-field">
+                <label>
+                  <span>Expiry</span>
+                  <input type="text" value="12/28" />
+                </label>
+                <label>
+                  <span>CVV</span>
+                  <input type="password" value="123" />
+                </label>
+              </div>
+              <label>
+                <span>Billing Email</span>
+                <input type="email" value="demo.customer@example.com" />
+              </label>
+              <button type="button" class="pay-btn">Simulate Gateway Payment</button>
+            </form>
+          </section>
+
+          <aside class="summary-panel">
+            <p class="section-label">Gateway Summary</p>
+            <h2 id="summaryTitle">Provider Snapshot</h2>
+            <dl class="summary-list">
+              <div>
+                <dt>Merchant</dt>
+                <dd>Payment Orchestration Demo</dd>
+              </div>
+              <div>
+                <dt>Mode</dt>
+                <dd>Redirected Checkout</dd>
+              </div>
+              <div>
+                <dt>Security</dt>
+                <dd>Hosted provider page</dd>
+              </div>
+              <div>
+                <dt>Intent</dt>
+                <dd id="intentLabel">Balanced authorization</dd>
+              </div>
+            </dl>
+            <a href="/" class="back-link">Back to orchestration dashboard</a>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script src="/provider.js"></script>
+  </body>
+</html>

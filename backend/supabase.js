@@ -1,6 +1,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const SUPABASE_TABLE = process.env.SUPABASE_TRANSACTIONS_TABLE || "transactions";
+const SUPABASE_GATEWAY_TABLE = process.env.SUPABASE_GATEWAY_TABLE || "gateway_snapshots";
 
 let supabase = null;
 let supabaseLoadError = null;
@@ -24,6 +25,7 @@ function getSupabaseStatus() {
     configured: Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY),
     connected: Boolean(supabase),
     table: SUPABASE_TABLE,
+    gateway_table: SUPABASE_GATEWAY_TABLE,
     load_error: supabaseLoadError ? supabaseLoadError.message : null,
   };
 }
@@ -80,8 +82,26 @@ async function insertTransaction(record) {
   return { persisted: true, source: "supabase" };
 }
 
+async function insertGatewaySnapshot(records) {
+  if (!supabase) {
+    return { persisted: false, source: "disabled" };
+  }
+
+  if (!Array.isArray(records) || records.length === 0) {
+    return { persisted: false, source: "skipped" };
+  }
+
+  const { error } = await supabase.from(SUPABASE_GATEWAY_TABLE).insert(records);
+  if (error) {
+    throw error;
+  }
+
+  return { persisted: true, source: "supabase", count: records.length };
+}
+
 module.exports = {
   fetchUserTransactionSummary,
   getSupabaseStatus,
+  insertGatewaySnapshot,
   insertTransaction,
 };

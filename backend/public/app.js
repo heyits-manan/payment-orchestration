@@ -3,6 +3,8 @@ const resultPanel = document.getElementById("resultPanel");
 const timeline = document.getElementById("timeline");
 const healthBadge = document.getElementById("healthBadge");
 const submitButton = document.getElementById("submitButton");
+const gatewayComparison = document.getElementById("gatewayComparison");
+const gatewayCards = document.getElementById("gatewayCards");
 
 const scenarios = {
   safe: {
@@ -70,6 +72,41 @@ function renderEmpty() {
       and the final orchestration response.
     </p>
   `;
+  gatewayComparison.classList.add("hidden");
+  gatewayCards.innerHTML = "";
+}
+
+function renderGatewayComparison(gateways) {
+  if (!Array.isArray(gateways) || gateways.length === 0) {
+    gatewayComparison.classList.add("hidden");
+    gatewayCards.innerHTML = "";
+    return;
+  }
+
+  gatewayComparison.classList.remove("hidden");
+  gatewayCards.innerHTML = gateways
+    .map(
+      (gateway) => `
+        <article class="gateway-card ${gateway.selected ? "selected" : ""}">
+          <h4>${gateway.gateway_name}</h4>
+          <dl>
+            <dt>Route score</dt>
+            <dd>${Number(gateway.route_score).toFixed(4)}</dd>
+            <dt>Success rate</dt>
+            <dd>${gateway.success_rate}%</dd>
+            <dt>Latency</dt>
+            <dd>${gateway.avg_latency_ms} ms</dd>
+            <dt>Fee</dt>
+            <dd>${gateway.fee_bps} bps</dd>
+            <dt>Health</dt>
+            <dd>${gateway.health_score}</dd>
+            <dt>Intl support</dt>
+            <dd>${gateway.supports_international ? "Yes" : "No"}</dd>
+          </dl>
+        </article>
+      `
+    )
+    .join("");
 }
 
 function renderResult(response, payment) {
@@ -131,7 +168,21 @@ function renderResult(response, payment) {
         <strong>${response.message}</strong>
       </div>
     </div>
+    ${
+      response.redirect_url
+        ? `
+          <div class="redirect-wrap">
+            <a href="${response.redirect_url}" class="redirect-link">
+              Open ${response.gateway_name || response.gateway} hosted checkout
+            </a>
+            <p class="redirect-copy">Demo redirect to the selected gateway page.</p>
+          </div>
+        `
+        : ""
+    }
   `;
+
+  renderGatewayComparison(response.evaluated_gateways);
 }
 
 function setFormValues(values) {
@@ -238,6 +289,12 @@ form.addEventListener("submit", async (event) => {
     ]);
 
     renderResult(data, payment);
+
+    if (data.status === "approved" && data.redirect_url) {
+      setTimeout(() => {
+        window.location.href = data.redirect_url;
+      }, 2200);
+    }
   } catch (error) {
     setTimeline([
       {
@@ -260,6 +317,8 @@ form.addEventListener("submit", async (event) => {
         </div>
       </div>
     `;
+    gatewayComparison.classList.add("hidden");
+    gatewayCards.innerHTML = "";
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "Analyze and Route Payment";
