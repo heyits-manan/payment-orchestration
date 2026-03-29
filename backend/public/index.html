@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Orchestration Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">BCS685 • Review Demo</p>
+          <h1>Adaptive Gateway Routing for Card Payments</h1>
+          <p class="hero-text">
+            A live demo of merchant-side payment orchestration: transaction input,
+            fraud-risk scoring, approve-or-block logic, and gateway selection.
+          </p>
+          <div class="hero-pills">
+            <span>Express API</span>
+            <span>Flask ML Service</span>
+            <span>Random Forest</span>
+          </div>
+        </div>
+        <aside class="hero-panel glass">
+          <p class="panel-label">Flow</p>
+          <ol class="flow-list">
+            <li>Merchant checkout captures payment details</li>
+            <li>Fraud score is generated using the ML service</li>
+            <li>Low-risk payments are routed to the best-fit gateway</li>
+            <li>High-risk payments are blocked before routing</li>
+          </ol>
+        </aside>
+      </header>
+
+      <main class="dashboard">
+        <section class="card glass checkout-card">
+          <div class="section-head">
+            <div>
+              <p class="panel-label">Demo Checkout</p>
+              <h2>Card Payment Request</h2>
+            </div>
+            <span id="healthBadge" class="health-pill pending">Checking backend...</span>
+          </div>
+
+          <form id="paymentForm" class="payment-form">
+            <div class="field-grid">
+              <label>
+                <span>Cardholder Name</span>
+                <input type="text" name="customer_name" value="Aarav Sharma" required />
+              </label>
+              <label>
+                <span>User ID</span>
+                <input type="text" name="user_id" value="user_123" required />
+              </label>
+              <label>
+                <span>Amount (INR)</span>
+                <input type="number" name="amount" min="1" step="0.01" value="1499" required />
+              </label>
+              <label>
+                <span>Payment Method</span>
+                <select name="payment_method">
+                  <option value="credit_card">Credit Card</option>
+                  <option value="debit_card">Debit Card</option>
+                </select>
+              </label>
+              <label>
+                <span>Card Number</span>
+                <input type="text" name="card_number" value="4111 1111 1111 1111" required />
+              </label>
+              <label>
+                <span>Expiry</span>
+                <input type="text" name="expiry" value="12/28" required />
+              </label>
+              <label>
+                <span>CVV</span>
+                <input type="password" name="cvv" value="123" required />
+              </label>
+              <label>
+                <span>Billing Country</span>
+                <select name="billing_country">
+                  <option value="IN" selected>India</option>
+                  <option value="US">United States</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AE">UAE</option>
+                </select>
+              </label>
+              <label>
+                <span>IP Country</span>
+                <select name="ip_country">
+                  <option value="IN" selected>India</option>
+                  <option value="US">United States</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AE">UAE</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="quick-scenarios">
+              <button type="button" class="scenario-btn" data-scenario="safe">Load Safe Scenario</button>
+              <button type="button" class="scenario-btn" data-scenario="risk">Load Risky Scenario</button>
+              <button type="button" class="scenario-btn" data-scenario="international">Load International Scenario</button>
+            </div>
+
+            <button id="submitButton" class="submit-btn" type="submit">
+              Analyze and Route Payment
+            </button>
+          </form>
+        </section>
+
+        <section class="card glass output-card">
+          <div class="section-head">
+            <div>
+              <p class="panel-label">Decision Engine</p>
+              <h2>Fraud and Routing Output</h2>
+            </div>
+          </div>
+
+          <div id="timeline" class="timeline">
+            <div class="timeline-step">
+              <span class="step-dot"></span>
+              <div>
+                <strong>Waiting for request</strong>
+                <p>Submit a payment to trigger fraud scoring and gateway selection.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="resultPanel" class="result-panel empty">
+            <p class="empty-title">No payment processed yet</p>
+            <p class="empty-copy">
+              This panel will show fraud score, model prediction, gateway chosen,
+              and the final orchestration response.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <section class="info-grid">
+        <article class="card glass mini-card">
+          <p class="panel-label">Architecture</p>
+          <h3>Merchant-Layer Orchestration</h3>
+          <p>
+            The checkout UI talks to Express. Express calls Flask for fraud
+            scoring, then routes approved payments to the best gateway.
+          </p>
+        </article>
+        <article class="card glass mini-card">
+          <p class="panel-label">Algorithm</p>
+          <h3>Random Forest + Threshold</h3>
+          <p>
+            The model returns a fraud probability. If it exceeds the threshold,
+            the transaction is blocked. Otherwise, routing logic picks a gateway.
+          </p>
+        </article>
+        <article class="card glass mini-card">
+          <p class="panel-label">Review Pitch</p>
+          <h3>Main Contribution</h3>
+          <p>
+            The project’s novelty is adaptive gateway routing, with fraud scoring
+            acting as the decision-support signal before final processing.
+          </p>
+        </article>
+      </section>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

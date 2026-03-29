@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 /**
  * server.js
  * =========
@@ -10,20 +12,27 @@
  * Environment variables:
  *   PORT              — Express port (default: 3000)
  *   ML_SERVICE_URL    — Base URL of the Python ML service (default: http://localhost:5001)
- *   FRAUD_THRESHOLD   — Probability threshold to block (default: 0.7)
+ *   FRAUD_THRESHOLD   — Probability threshold to block (default: 0.8)
  */
 
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const path = require("path");
+const {
+  fetchUserTransactionSummary,
+  getSupabaseStatus,
+  insertTransaction,
+} = require("./supabase");
 
 const PORT = process.env.PORT || 3000;
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:5001";
-const FRAUD_THRESHOLD = parseFloat(process.env.FRAUD_THRESHOLD) || 0.7;
+const FRAUD_THRESHOLD = parseFloat(process.env.FRAUD_THRESHOLD) || 0.8;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 const gatewayProfiles = {
   gateway_fast: { score: 0.92, fee_bps: 180, strengths: ["low_risk", "domestic"] },
@@ -31,7 +40,7 @@ const gatewayProfiles = {
   gateway_prime: { score: 0.95, fee_bps: 220, strengths: ["high_value", "credit_card"] },
 };
 
-function buildFeatureVector(amount, userId, paymentMethod) {
+function buildFeatureVector(amount, userId, paymentMethod, billingCountry = "IN", ipCountry = "IN") {
   let hash = 0;
   for (const ch of String(userId)) {
     hash = (hash * 31 + ch.charCodeAt(0)) & 0xffffffff;
@@ -50,6 +59,10 @@ function buildFeatureVector(amount, userId, paymentMethod) {
     wallet: 5,
   };
   const methodCode = methodMap[paymentMethod] || 0;
+  const isInternational =
+    String(billingCountry).toUpperCase() !== String(ipCountry).toUpperCase();
+  const amountRiskBoost =
+    amount >= 8000 ? 2.8 : amount >= 4000 ? 1.6 : amount >= 1500 ? 0.7 : 0;
 
   const features = new Array(30).fill(0);
   features[0] = Date.now() % 172800;
@@ -58,8 +71,9 @@ function buildFeatureVector(amount, userId, paymentMethod) {
   for (let i = 1; i <= 28; i++) {
     features[i] =
       (pseudoRandom(i) - 0.5) * 4 +
-      (amount > 500 ? (i % 3 === 0 ? -1.5 : 0.5) : 0) +
-      (methodCode * 0.1 * (i % 5 === 0 ? 1 : 0));
+      amountRiskBoost * (i % 3 === 0 ? -1.25 : 0.85) +
+      (methodCode * 0.1 * (i % 5 === 0 ? 1 : 0)) +
+      (isInternational ? (i % 4 === 0 ? -2.2 : 1.1) : 0);
   }
 
   return features;
@@ -109,13 +123,87 @@ function chooseGateway(payment, fraudScore) {
   };
 }
 
+function calculateRiskAdjustments(payment, history = {}) {
+  const amount = Number(payment.amount) || 0;
+  const billingCountry = String(payment.billing_country || "IN").toUpperCase();
+  const ipCountry = String(payment.ip_country || billingCountry).toUpperCase();
+  const avgAmount = Number(history.avgAmount || 0);
+
+  let adjustment = 0;
+  const reasons = [];
+
+  if (amount >= 8000) {
+    adjustment += 0.46;
+    reasons.push("high transaction amount");
+  } else if (amount >= 4000) {
+    adjustment += 0.22;
+    reasons.push("above-normal transaction amount");
+  }
+
+  if (billingCountry !== ipCountry) {
+    adjustment += 0.34;
+    reasons.push("billing and IP country mismatch");
+  }
+
+  if (String(payment.payment_method) === "credit_card") {
+    adjustment += 0.04;
+  }
+
+  if (history.transactions24h >= 5) {
+    adjustment += 0.16;
+    reasons.push("high transaction velocity in last 24h");
+  }
+
+  if (history.blocked24h >= 2) {
+    adjustment += 0.18;
+    reasons.push("multiple blocked transactions in last 24h");
+  }
+
+  if (avgAmount > 0 && amount >= avgAmount * 5) {
+    adjustment += 0.28;
+    reasons.push("amount much higher than user average");
+  } else if (avgAmount > 0 && amount >= avgAmount * 2) {
+    adjustment += 0.14;
+    reasons.push("amount above user average");
+  }
+
+  if (
+    history.billingCountries &&
+    history.billingCountries.length > 0 &&
+    !history.billingCountries.includes(billingCountry)
+  ) {
+    adjustment += 0.12;
+    reasons.push("new billing country for user");
+  }
+
+  if (
+    history.ipCountries &&
+    history.ipCountries.length > 0 &&
+    !history.ipCountries.includes(ipCountry)
+  ) {
+    adjustment += 0.12;
+    reasons.push("new IP country for user");
+  }
+
+  return {
+    adjustedFraudScore: Number(Math.min(0.99, adjustment).toFixed(4)),
+    reasons,
+  };
+}
+
 app.get("/health", (_req, res) => {
+  const supabase = getSupabaseStatus();
   res.json({
     status: "healthy",
     ml_service_url: ML_SERVICE_URL,
     fraud_threshold: FRAUD_THRESHOLD,
     gateway_profiles: Object.keys(gatewayProfiles),
+    supabase,
   });
+});
+
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.post("/process-payment", async (req, res) => {
@@ -134,18 +222,31 @@ app.post("/process-payment", async (req, res) => {
   console.log(`    Method    : ${payment_method}`);
   console.log("────────────────────────────────────────");
 
-  const features = buildFeatureVector(Number(amount), user_id, payment_method);
+  const features = buildFeatureVector(
+    Number(amount),
+    user_id,
+    payment_method,
+    req.body.billing_country,
+    req.body.ip_country
+  );
 
   try {
+    const history = await fetchUserTransactionSummary(user_id);
     const mlResponse = await axios.post(`${ML_SERVICE_URL}/predict`, { features });
     const { prediction, fraud_probability } = mlResponse.data;
+    const riskAdjustment = calculateRiskAdjustments(req.body, history);
+    const effectiveFraudScore = Number(
+      Math.min(0.99, fraud_probability + riskAdjustment.adjustedFraudScore).toFixed(4)
+    );
 
-    console.log(`🔍  Fraud Score : ${fraud_probability}`);
+    console.log(`🔍  Model Score : ${fraud_probability}`);
+    console.log(`🧮  Effective   : ${effectiveFraudScore}`);
+    console.log(`🗂️   History     : ${history.transactions24h} txns / 24h`);
     console.log(`📊  Prediction  : ${prediction === 1 ? "FRAUD" : "LEGIT"}`);
 
-    const blocked = fraud_probability > FRAUD_THRESHOLD;
+    const blocked = prediction === 1 || effectiveFraudScore > FRAUD_THRESHOLD;
     const status = blocked ? "blocked" : "approved";
-    const gatewayDecision = blocked ? null : chooseGateway(req.body, fraud_probability);
+    const gatewayDecision = blocked ? null : chooseGateway(req.body, effectiveFraudScore);
     const message = blocked
       ? "Transaction Blocked — High fraud risk detected."
       : `Transaction Approved — Routed to ${gatewayDecision.gateway}.`;
@@ -156,13 +257,37 @@ app.post("/process-payment", async (req, res) => {
     }
     console.log("────────────────────────────────────────\n");
 
+    let persistence = { persisted: false, source: "disabled" };
+    try {
+      persistence = await insertTransaction({
+        user_id,
+        amount: Number(amount),
+        payment_method,
+        billing_country: req.body.billing_country || "IN",
+        ip_country: req.body.ip_country || req.body.billing_country || "IN",
+        model_prediction: prediction,
+        model_fraud_score: fraud_probability,
+        fraud_score: effectiveFraudScore,
+        status,
+        gateway: gatewayDecision ? gatewayDecision.gateway : null,
+        routing_reason: gatewayDecision ? gatewayDecision.routing_reason : null,
+        risk_adjustment_reasons: riskAdjustment.reasons,
+      });
+    } catch (dbError) {
+      console.error("⚠️   Transaction persistence failed:", dbError.message);
+    }
+
     return res.json({
       status,
-      fraud_score: fraud_probability,
+      fraud_score: effectiveFraudScore,
+      model_fraud_score: fraud_probability,
       prediction,
       gateway: gatewayDecision ? gatewayDecision.gateway : null,
       routing_reason: gatewayDecision ? gatewayDecision.routing_reason : null,
       gateway_score: gatewayDecision ? gatewayDecision.gateway_score : null,
+      risk_adjustment_reasons: riskAdjustment.reasons,
+      history_summary: history,
+      persistence,
       message,
       transaction: { amount, user_id, payment_method },
     });

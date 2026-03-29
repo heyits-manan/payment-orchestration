@@ -63,6 +63,25 @@ node server.js
 ```
 
 Express API starts on **http://localhost:3000**.
+The demo frontend is also served from **http://localhost:3000**.
+
+### Optional — Connect Supabase for Transaction History
+
+Authentication is not required for the MVP demo. Supabase is used here as a
+backend database for storing transaction history and generating user-behavior
+risk signals.
+
+1. Create a Supabase project.
+2. Run the SQL in [`supabase-schema.sql`](/Users/itsmanan/College/Major%20Project/backend/supabase-schema.sql).
+3. Copy [`backend/.env.example`](/Users/itsmanan/College/Major%20Project/backend/.env.example) to `.env`.
+4. Add:
+   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SUPABASE_TRANSACTIONS_TABLE`.
+5. Restart the backend.
+
+When Supabase is configured, the backend:
+- stores every processed transaction
+- fetches recent user history
+- adds history-based fraud signals such as high velocity, repeated blocked attempts, and unusual amount spikes
 
 ---
 
@@ -115,6 +134,12 @@ curl http://localhost:3000/health
 curl http://localhost:5001/health
 ```
 
+### Web Demo
+
+Open [http://localhost:3000](http://localhost:3000) in the browser to use the
+checkout-style demo UI. It submits a payment request to Express, shows the
+fraud-analysis stage, and displays the final gateway-routing decision.
+
 ---
 
 ## ⚙️ Configuration
@@ -123,7 +148,7 @@ curl http://localhost:5001/health
 |---|---|---|
 | `PORT` | `3000` | Express server port |
 | `ML_SERVICE_URL` | `http://localhost:5001` | Python ML service URL |
-| `FRAUD_THRESHOLD` | `0.7` | Block transactions above this score |
+| `FRAUD_THRESHOLD` | `0.8` | Block transactions above this score |
 
 ---
 
@@ -133,8 +158,8 @@ curl http://localhost:5001/health
 2. Express derives a compatible 30-element feature vector for the fraud model demo
 3. Express calls the Python ML service (`/predict`)
 4. The Random Forest model returns a fraud probability
-5. If probability > 0.7 → **Transaction Blocked**
-6. If probability ≤ 0.7 → **Transaction Approved**
+5. If probability > 0.8 → **Transaction Blocked**
+6. If probability ≤ 0.8 → **Transaction Approved**
 7. Approved payments are routed to the best-fit gateway based on risk, amount, and gateway profile
 
 Note: the fraud model is trained on the public `creditcard.csv` benchmark dataset, whose anonymized PCA features (`V1` to `V28`) are not directly available in a live payment system. For the MVP demo, Express generates a compatible feature vector and uses the fraud score as an input to adaptive gateway routing.
