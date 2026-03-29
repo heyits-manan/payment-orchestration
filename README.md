@@ -34,8 +34,8 @@ cd ml-service
 pip install -r requirements.txt
 python train_model.py
 ```
-
-By default, training reads [`creditcard.csv`](/Users/itsmanan/College/Major%20Project/creditcard.csv) from the project root, generates `fraud_model.pkl`, and prints accuracy metrics.
+You can download the Credit Card Fraud Detection from https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud?resource=download. Better store it in the project root.
+Training reads [`creditcard.csv`](/Users/itsmanan/College/Major%20Project/creditcard.csv) from the project root, generates `fraud_model.pkl`, and prints accuracy metrics.
 
 If your dataset lives elsewhere, set `DATASET_PATH` before running training:
 
