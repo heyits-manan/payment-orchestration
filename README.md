@@ -1,6 +1,7 @@
 # AI-Driven Payment Orchestration Platform
 
 A college-project MVP for merchant-side payment orchestration:
+
 - fraud scoring using a Python ML service
 - history-based risk adjustments using Supabase
 - dynamic gateway comparison using mock provider APIs
@@ -60,14 +61,14 @@ Major Project/
 
 ## Tech Stack
 
-| Component | Technology |
-|---|---|
-| Frontend Demo | HTML, CSS, Vanilla JS |
-| Backend API | Node.js, Express |
-| ML API | Python, Flask |
-| ML Model | scikit-learn Random Forest |
-| Database | Supabase |
-| HTTP Client | Axios |
+| Component     | Technology                 |
+| ------------- | -------------------------- |
+| Frontend Demo | HTML, CSS, Vanilla JS      |
+| Backend API   | Node.js, Express           |
+| ML API        | Python, Flask              |
+| ML Model      | scikit-learn Random Forest |
+| Database      | Supabase                   |
+| HTTP Client   | Axios                      |
 
 ## Setup
 
@@ -85,7 +86,8 @@ pip install -r requirements.txt
 python train_model.py
 ```
 
-By default, training reads `creditcard.csv` from the project root and generates `fraud_model.pkl`.
+You can download the Credit Card Fraud Detection from https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud?resource=download. Better store it in the project root.
+Training reads [`creditcard.csv`](/Users/itsmanan/College/Major%20Project/creditcard.csv) from the project root, generates `fraud_model.pkl`, and prints accuracy metrics.
 
 If your dataset is elsewhere:
 
@@ -126,6 +128,7 @@ SUPABASE_GATEWAY_TABLE=gateway_snapshots
 ### 4. Optional Supabase setup
 
 Authentication is not required for the current MVP. Supabase is used as a backend database for:
+
 - transaction history
 - history-based fraud signals
 - gateway evaluation snapshots
@@ -133,6 +136,7 @@ Authentication is not required for the current MVP. Supabase is used as a backen
 Run the SQL in [`supabase-schema.sql`](/Users/itsmanan/College/Major%20Project/backend/supabase-schema.sql) in the Supabase SQL Editor.
 
 This creates:
+
 - `transactions`
 - `gateway_snapshots`
 
@@ -212,6 +216,7 @@ curl -X POST http://localhost:3000/mock-gateways/gateway_alpha \
 ```
 
 Available providers:
+
 - `gateway_alpha`
 - `gateway_orbit`
 - `gateway_flux`
@@ -231,6 +236,7 @@ curl -X POST http://localhost:5001/predict \
 Open [http://localhost:3000](http://localhost:3000).
 
 Current demo flow:
+
 1. User enters payment details on the merchant checkout UI.
 2. Express sends the transaction to the Flask ML service.
 3. The backend computes the final fraud score using:
@@ -247,11 +253,13 @@ Current demo flow:
 The backend does not rely only on the ML prediction.
 
 Final decision combines:
+
 - `model_fraud_score` from the Random Forest model
 - merchant-side risk adjustments
 - history-based signals from Supabase
 
 Examples of history-based signals:
+
 - high transaction velocity in the last 24 hours
 - repeated blocked transactions
 - amount much higher than the user’s average
@@ -259,6 +267,7 @@ Examples of history-based signals:
 - new IP country
 
 The backend blocks a transaction if:
+
 - the ML model predicts fraud, or
 - the final effective fraud score exceeds `FRAUD_THRESHOLD`
 
@@ -267,6 +276,7 @@ Current default threshold: `0.8`
 ## Gateway Routing Logic
 
 Each mock provider returns dynamic metrics such as:
+
 - success rate
 - average latency
 - fee
@@ -275,6 +285,7 @@ Each mock provider returns dynamic metrics such as:
 - international support
 
 The router compares providers using:
+
 - fraud score
 - transaction amount
 - domestic vs international context
