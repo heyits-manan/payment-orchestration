@@ -1,0 +1,7 @@
+{
+  "payment_attempts": [],
+  "fraud_decisions": [],
+  "gateway_evaluations": [],
+  "gateway_transactions": [],
+  "audit_logs": []
+}
