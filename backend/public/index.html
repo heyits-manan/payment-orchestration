@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payment Orchestration Demo</title>
+    <title>AI Payment Orchestration Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,167 +15,283 @@
   <body>
     <div class="page-shell">
       <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">BCS685 • Review Demo</p>
-          <h1>Adaptive Gateway Routing for Card Payments</h1>
+        <div class="hero-copy glass">
+          <p class="eyebrow">Major Project • Full Workflow Build</p>
+          <h1>AI-Driven Payment Orchestration Platform</h1>
           <p class="hero-text">
-            A live demo of merchant-side payment orchestration: transaction input,
-            fraud-risk scoring, approve-or-block logic, and gateway selection.
+            A merchant-side payment system that creates payment attempts, scores fraud
+            risk, routes to the best gateway, supports fallback routing, and tracks the
+            full transaction lifecycle.
           </p>
           <div class="hero-pills">
-            <span>Express API</span>
-            <span>Flask ML Service</span>
-            <span>Random Forest</span>
+            <span>Fraud Scoring</span>
+            <span>Gateway Routing</span>
+            <span>Fallback Handling</span>
+            <span>Analytics Dashboard</span>
           </div>
         </div>
-        <aside class="hero-panel glass">
-          <p class="panel-label">Flow</p>
-          <ol class="flow-list">
-            <li>Merchant checkout captures payment details</li>
-            <li>Fraud score is generated using the ML service</li>
-            <li>Low-risk payments are routed to the best-fit gateway</li>
-            <li>High-risk payments are blocked before routing</li>
-          </ol>
-        </aside>
-      </header>
 
-      <main class="dashboard">
-        <section class="card glass checkout-card">
-          <div class="section-head">
+        <aside class="hero-panel glass">
+          <div class="section-head compact">
             <div>
-              <p class="panel-label">Demo Checkout</p>
-              <h2>Card Payment Request</h2>
+              <p class="panel-label">System Health</p>
+              <h2>Runtime Status</h2>
             </div>
             <span id="healthBadge" class="health-pill pending">Checking backend...</span>
           </div>
-
-          <form id="paymentForm" class="payment-form">
-            <div class="field-grid">
-              <label>
-                <span>Cardholder Name</span>
-                <input type="text" name="customer_name" value="Aarav Sharma" required />
-              </label>
-              <label>
-                <span>User ID</span>
-                <input type="text" name="user_id" value="user_123" required />
-              </label>
-              <label>
-                <span>Amount (INR)</span>
-                <input type="number" name="amount" min="1" step="0.01" value="1499" required />
-              </label>
-              <label>
-                <span>Payment Method</span>
-                <select name="payment_method">
-                  <option value="credit_card">Credit Card</option>
-                  <option value="debit_card">Debit Card</option>
-                </select>
-              </label>
-              <label>
-                <span>Card Number</span>
-                <input type="text" name="card_number" value="4111 1111 1111 1111" required />
-              </label>
-              <label>
-                <span>Expiry</span>
-                <input type="text" name="expiry" value="12/28" required />
-              </label>
-              <label>
-                <span>CVV</span>
-                <input type="password" name="cvv" value="123" required />
-              </label>
-              <label>
-                <span>Billing Country</span>
-                <select name="billing_country">
-                  <option value="IN" selected>India</option>
-                  <option value="US">United States</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="AE">UAE</option>
-                </select>
-              </label>
-              <label>
-                <span>IP Country</span>
-                <select name="ip_country">
-                  <option value="IN" selected>India</option>
-                  <option value="US">United States</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="AE">UAE</option>
-                </select>
-              </label>
+          <dl id="healthList" class="summary-stack">
+            <div>
+              <dt>ML Service</dt>
+              <dd id="healthMl">Loading...</dd>
             </div>
-
-            <div class="quick-scenarios">
-              <button type="button" class="scenario-btn" data-scenario="safe">Load Safe Scenario</button>
-              <button type="button" class="scenario-btn" data-scenario="risk">Load Risky Scenario</button>
-              <button type="button" class="scenario-btn" data-scenario="international">Load International Scenario</button>
+            <div>
+              <dt>Storage</dt>
+              <dd id="healthStorage">Loading...</dd>
             </div>
+            <div>
+              <dt>Hard Threshold</dt>
+              <dd id="healthThreshold">-</dd>
+            </div>
+            <div>
+              <dt>Review Band</dt>
+              <dd id="healthReview">-</dd>
+            </div>
+          </dl>
+        </aside>
+      </header>
 
-            <button id="submitButton" class="submit-btn" type="submit">
-              Analyze and Route Payment
-            </button>
-          </form>
+      <nav class="tab-bar glass">
+        <button type="button" class="tab-btn active" data-view="checkout">Checkout Flow</button>
+        <button type="button" class="tab-btn" data-view="operations">Operations Dashboard</button>
+      </nav>
+
+      <main class="view-stack">
+        <section id="view-checkout" class="view-pane active">
+          <div class="dashboard">
+            <section class="card glass checkout-card">
+              <div class="section-head">
+                <div>
+                  <p class="panel-label">Merchant Checkout</p>
+                  <h2>Create Payment Attempt</h2>
+                </div>
+                <div class="inline-pills">
+                  <span class="mini-pill">Idempotent Order Flow</span>
+                  <span class="mini-pill">Risk + Routing</span>
+                </div>
+              </div>
+
+              <form id="paymentForm" class="payment-form">
+                <div class="field-grid">
+                  <label>
+                    <span>Customer Name</span>
+                    <input type="text" name="customer_name" value="Aarav Sharma" required />
+                  </label>
+                  <label>
+                    <span>Customer Email</span>
+                    <input type="email" name="customer_email" value="aarav@example.com" required />
+                  </label>
+                  <label>
+                    <span>User ID</span>
+                    <input type="text" name="user_id" value="user_123" required />
+                  </label>
+                  <label>
+                    <span>Order Reference</span>
+                    <input type="text" name="order_reference" value="ORD-1001" required />
+                  </label>
+                  <label>
+                    <span>Amount (INR)</span>
+                    <input type="number" name="amount" min="1" step="0.01" value="1499" required />
+                  </label>
+                  <label>
+                    <span>Currency</span>
+                    <select name="currency">
+                      <option value="INR" selected>INR</option>
+                      <option value="USD">USD</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Payment Method</span>
+                    <select name="payment_method">
+                      <option value="credit_card">Credit Card</option>
+                      <option value="debit_card">Debit Card</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Device ID</span>
+                    <input type="text" name="device_id" value="device_india_01" required />
+                  </label>
+                  <label>
+                    <span>Card Number</span>
+                    <input type="text" name="card_number" value="4111 1111 1111 1111" required />
+                  </label>
+                  <label>
+                    <span>Expiry</span>
+                    <input type="text" name="expiry" value="12/28" required />
+                  </label>
+                  <label>
+                    <span>CVV</span>
+                    <input type="password" name="cvv" value="123" required />
+                  </label>
+                  <label>
+                    <span>Billing Country</span>
+                    <select name="billing_country">
+                      <option value="IN" selected>India</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="AE">UAE</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>IP Country</span>
+                    <select name="ip_country">
+                      <option value="IN" selected>India</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="AE">UAE</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="quick-scenarios">
+                  <button type="button" class="scenario-btn" data-scenario="safe">Safe Scenario</button>
+                  <button type="button" class="scenario-btn" data-scenario="review">Review Scenario</button>
+                  <button type="button" class="scenario-btn" data-scenario="risk">Blocked Scenario</button>
+                  <button type="button" class="scenario-btn" data-scenario="international">International Scenario</button>
+                </div>
+
+                <button id="submitButton" class="submit-btn" type="submit">
+                  Evaluate, Route, and Create Payment
+                </button>
+              </form>
+            </section>
+
+            <section class="card glass output-card">
+              <div class="section-head">
+                <div>
+                  <p class="panel-label">Decision Engine</p>
+                  <h2>Fraud and Routing Decision</h2>
+                </div>
+              </div>
+
+              <div id="timeline" class="timeline">
+                <div class="timeline-step">
+                  <span class="step-dot"></span>
+                  <div>
+                    <strong>Waiting for request</strong>
+                    <p>Submit a payment to create a lifecycle-managed payment attempt.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="resultPanel" class="result-panel empty">
+                <p class="empty-title">No payment processed yet</p>
+                <p class="empty-copy">
+                  This panel will show the model score, rule score, final risk, and the
+                  selected payment gateway or review/block decision.
+                </p>
+              </div>
+
+              <div id="gatewayComparison" class="gateway-comparison hidden">
+                <div class="comparison-head">
+                  <p class="panel-label">Gateway Comparison</p>
+                  <h3>Ranked Providers</h3>
+                </div>
+                <div id="gatewayCards" class="gateway-cards"></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="info-grid">
+            <article class="card glass mini-card">
+              <p class="panel-label">Lifecycle</p>
+              <h3>Tracked Payment Statuses</h3>
+              <p>
+                Each payment moves through `risk_pending`, `routed`, `review_required`,
+                `blocked`, `success`, or `failed`, with audit logs for each transition.
+              </p>
+            </article>
+            <article class="card glass mini-card">
+              <p class="panel-label">Fraud Logic</p>
+              <h3>Model Score + Rule Score</h3>
+              <p>
+                The platform combines ML prediction, velocity checks, country mismatch,
+                amount anomaly, payment method novelty, and device history.
+              </p>
+            </article>
+            <article class="card glass mini-card">
+              <p class="panel-label">Gateway Layer</p>
+              <h3>Routing With Fallback</h3>
+              <p>
+                Approved payments are ranked across providers and can automatically reroute
+                to the next gateway if the first hosted checkout fails.
+              </p>
+            </article>
+          </section>
         </section>
 
-        <section class="card glass output-card">
-          <div class="section-head">
-            <div>
-              <p class="panel-label">Decision Engine</p>
-              <h2>Fraud and Routing Output</h2>
-            </div>
-          </div>
-
-          <div id="timeline" class="timeline">
-            <div class="timeline-step">
-              <span class="step-dot"></span>
-              <div>
-                <strong>Waiting for request</strong>
-                <p>Submit a payment to trigger fraud scoring and gateway selection.</p>
+        <section id="view-operations" class="view-pane">
+          <div class="operations-grid">
+            <section class="card glass">
+              <div class="section-head">
+                <div>
+                  <p class="panel-label">Operations Summary</p>
+                  <h2>Merchant Analytics</h2>
+                </div>
+                <button id="refreshDashboardButton" type="button" class="ghost-btn">
+                  Refresh Metrics
+                </button>
               </div>
-            </div>
+              <div id="summaryCards" class="summary-cards"></div>
+            </section>
+
+            <section class="card glass">
+              <div class="section-head">
+                <div>
+                  <p class="panel-label">Fraud Insights</p>
+                  <h2>Top Risk Reasons</h2>
+                </div>
+              </div>
+              <div id="fraudReasons" class="reason-list"></div>
+            </section>
           </div>
 
-          <div id="resultPanel" class="result-panel empty">
-            <p class="empty-title">No payment processed yet</p>
-            <p class="empty-copy">
-              This panel will show fraud score, model prediction, gateway chosen,
-              and the final orchestration response.
-            </p>
-          </div>
+          <div class="operations-grid lower">
+            <section class="card glass">
+              <div class="section-head">
+                <div>
+                  <p class="panel-label">Gateway Performance</p>
+                  <h2>Selection and Reliability</h2>
+                </div>
+              </div>
+              <div id="gatewayPerformance" class="gateway-cards dashboard-cards"></div>
+            </section>
 
-          <div id="gatewayComparison" class="gateway-comparison hidden">
-            <div class="comparison-head">
-              <p class="panel-label">Gateway Comparison</p>
-              <h3>Evaluated Providers</h3>
-            </div>
-            <div id="gatewayCards" class="gateway-cards"></div>
+            <section class="card glass">
+              <div class="section-head">
+                <div>
+                  <p class="panel-label">Recent Payments</p>
+                  <h2>Transaction Lifecycle Feed</h2>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>User</th>
+                      <th>Status</th>
+                      <th>Gateway</th>
+                      <th>Risk</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transactionRows"></tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </section>
       </main>
-
-      <section class="info-grid">
-        <article class="card glass mini-card">
-          <p class="panel-label">Architecture</p>
-          <h3>Merchant-Layer Orchestration</h3>
-          <p>
-            The checkout UI talks to Express. Express calls Flask for fraud
-            scoring, then routes approved payments to the best gateway.
-          </p>
-        </article>
-        <article class="card glass mini-card">
-          <p class="panel-label">Algorithm</p>
-          <h3>Random Forest + Threshold</h3>
-          <p>
-            The model returns a fraud probability. If it exceeds the threshold,
-            the transaction is blocked. Otherwise, routing logic picks a gateway.
-          </p>
-        </article>
-        <article class="card glass mini-card">
-          <p class="panel-label">Review Pitch</p>
-          <h3>Main Contribution</h3>
-          <p>
-            The project’s novelty is adaptive gateway routing, with fraud scoring
-            acting as the decision-support signal before final processing.
-          </p>
-        </article>
-      </section>
     </div>
 
     <script src="/app.js"></script>

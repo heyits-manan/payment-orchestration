@@ -28,16 +28,20 @@
 
         <div class="checkout-grid">
           <section class="checkout-panel">
-            <p class="section-label">Payment Details</p>
-            <h2>Enter Card Information</h2>
+            <p class="section-label">Payment Session</p>
+            <h2>Gateway-Controlled Checkout</h2>
+            <div id="attemptSummary" class="notice-box">
+              Loading payment attempt details...
+            </div>
+
             <form class="provider-form">
               <label>
                 <span>Name on Card</span>
-                <input type="text" value="Aarav Sharma" />
+                <input type="text" id="cardholderField" value="Aarav Sharma" />
               </label>
               <label>
                 <span>Card Number</span>
-                <input type="text" value="4111 1111 1111 1111" />
+                <input type="text" id="cardNumberField" value="4111 1111 1111 1111" />
               </label>
               <div class="dual-field">
                 <label>
@@ -51,10 +55,17 @@
               </div>
               <label>
                 <span>Billing Email</span>
-                <input type="email" value="demo.customer@example.com" />
+                <input type="email" id="emailField" value="demo.customer@example.com" />
               </label>
-              <button type="button" class="pay-btn">Simulate Gateway Payment</button>
             </form>
+
+            <div class="action-row">
+              <button type="button" class="pay-btn" data-outcome="success">Simulate Success</button>
+              <button type="button" class="pay-btn secondary" data-outcome="failed">Simulate Failure</button>
+              <button type="button" class="pay-btn tertiary" data-outcome="cancelled">Cancel Payment</button>
+            </div>
+
+            <div id="gatewayResult" class="notice-box hidden"></div>
           </section>
 
           <aside class="summary-panel">
@@ -63,7 +74,7 @@
             <dl class="summary-list">
               <div>
                 <dt>Merchant</dt>
-                <dd>Payment Orchestration Demo</dd>
+                <dd>AI Payment Orchestration Platform</dd>
               </div>
               <div>
                 <dt>Mode</dt>
@@ -76,6 +87,14 @@
               <div>
                 <dt>Intent</dt>
                 <dd id="intentLabel">Balanced authorization</dd>
+              </div>
+              <div>
+                <dt>Attempt ID</dt>
+                <dd id="attemptLabel">-</dd>
+              </div>
+              <div>
+                <dt>Current Status</dt>
+                <dd id="statusLabel">-</dd>
               </div>
             </dl>
             <a href="/" class="back-link">Back to orchestration dashboard</a>
