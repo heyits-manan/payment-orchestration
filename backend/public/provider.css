@@ -1,11 +1,14 @@
 :root {
-  --bg: #081119;
-  --panel: rgba(10, 24, 38, 0.92);
-  --text: #edf6ff;
-  --muted: #abc0d8;
-  --line: rgba(255, 255, 255, 0.1);
-  --accent: #78e0b2;
-  --accent-strong: #1f8f6d;
+  --bg: #101418;
+  --surface: #171c22;
+  --surface-alt: #20262d;
+  --border: #303842;
+  --text: #eef2f6;
+  --muted: #99a3af;
+  --primary: #4f8cff;
+  --success: #48c78e;
+  --danger: #ff6f61;
+  --warning: #e6b450;
 }
 
 * {
@@ -17,43 +20,44 @@ body {
   min-height: 100vh;
   font-family: "Space Grotesk", sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(120, 224, 178, 0.16), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(120, 171, 255, 0.18), transparent 28%),
-    linear-gradient(140deg, #081119 0%, #0f1c2b 55%, #12273a 100%);
+  background: var(--bg);
   display: grid;
   place-items: center;
   padding: 24px;
 }
 
 .provider-shell {
-  width: min(1040px, 100%);
+  width: min(980px, 100%);
+}
+
+.provider-card,
+.checkout-panel,
+.summary-panel {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
 }
 
 .provider-card {
-  border-radius: 28px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
-  padding: 30px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
 }
 
 .provider-header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .provider-tag,
 .section-label {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--accent);
+  letter-spacing: 0;
+  color: var(--muted);
 }
 
 .provider-header h1,
@@ -64,72 +68,74 @@ body {
 
 .provider-copy {
   color: var(--muted);
-  line-height: 1.7;
-  max-width: 52ch;
-  margin: 14px 0 0;
+  line-height: 1.5;
+  max-width: 62ch;
+  margin: 10px 0 0;
 }
 
 .provider-badge {
   align-self: start;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-alt);
+  font-size: 0.82rem;
 }
 
 .checkout-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 20px;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 16px;
 }
 
 .checkout-panel,
 .summary-panel {
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 24px;
+  padding: 18px;
 }
 
 .provider-form {
   display: grid;
-  gap: 14px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .notice-box {
-  border-radius: 18px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  padding: 14px;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
-.notice-box.hidden {
-  display: none;
+.notice-box.hidden,
+.hidden {
+  display: none !important;
 }
 
 .notice-box.success {
-  color: var(--accent);
-  border-color: rgba(120, 224, 178, 0.35);
+  color: var(--success);
+  border-color: #2d6f52;
+  background: #14251e;
 }
 
 .notice-box.warning {
-  color: #ffd28d;
-  border-color: rgba(255, 210, 141, 0.35);
+  color: var(--warning);
+  border-color: #695122;
+  background: #251f13;
 }
 
 .notice-box.danger {
-  color: #ff9090;
-  border-color: rgba(255, 144, 144, 0.35);
+  color: var(--danger);
+  border-color: #79392f;
+  background: #2a1715;
 }
 
 label {
   display: grid;
-  gap: 8px;
-  color: var(--muted);
+  gap: 6px;
+  color: var(--text);
 }
 
 input,
@@ -138,11 +144,11 @@ button {
 }
 
 input {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #11161c;
   color: var(--text);
-  padding: 14px 14px;
+  padding: 11px 12px;
 }
 
 .dual-field {
@@ -153,45 +159,46 @@ input {
 
 .pay-btn {
   margin-top: 6px;
-  border: 0;
-  border-radius: 16px;
-  padding: 15px 18px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  padding: 11px 14px;
   font-weight: 700;
-  color: #081119;
-  background: linear-gradient(135deg, var(--accent) 0%, #a2efd1 100%);
+  color: #081018;
+  background: var(--primary);
   cursor: pointer;
 }
 
 .action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 18px;
+  gap: 10px;
+  margin-top: 14px;
 }
 
-.pay-btn.secondary {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
-}
-
+.pay-btn.secondary,
 .pay-btn.tertiary {
-  color: #ffb2b2;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .summary-list {
   display: grid;
-  gap: 14px;
-  margin: 18px 0 22px;
+  gap: 10px;
+  margin: 14px 0 18px;
 }
 
 .summary-list div {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-list div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .summary-list dt,
@@ -204,7 +211,7 @@ input {
 }
 
 .back-link {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -215,10 +222,14 @@ input {
 }
 
 @media (max-width: 560px) {
+  body {
+    padding: 12px;
+  }
+
   .provider-card,
   .checkout-panel,
   .summary-panel {
-    padding: 20px;
+    padding: 16px;
   }
 
   .provider-header {
