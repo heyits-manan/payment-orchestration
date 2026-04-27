@@ -11,69 +11,6 @@ const transactionRows = document.getElementById("transactionRows");
 const gatewayPerformance = document.getElementById("gatewayPerformance");
 const refreshDashboardButton = document.getElementById("refreshDashboardButton");
 
-const scenarios = {
-  safe: {
-    customer_name: "Aarav Sharma",
-    customer_email: "aarav@example.com",
-    user_id: "user_123",
-    order_reference: "ORD-1001",
-    amount: "1499",
-    currency: "INR",
-    payment_method: "credit_card",
-    device_id: "device_india_01",
-    card_number: "4111 1111 1111 1111",
-    expiry: "12/28",
-    cvv: "123",
-    billing_country: "IN",
-    ip_country: "IN",
-  },
-  review: {
-    customer_name: "Neha Verma",
-    customer_email: "neha@example.com",
-    user_id: "user_review",
-    order_reference: "ORD-2001",
-    amount: "5200",
-    currency: "INR",
-    payment_method: "credit_card",
-    device_id: "device_review_09",
-    card_number: "5555 5555 5555 4444",
-    expiry: "09/27",
-    cvv: "572",
-    billing_country: "IN",
-    ip_country: "AE",
-  },
-  risk: {
-    customer_name: "Riya Kapoor",
-    customer_email: "riya@example.com",
-    user_id: "user_999",
-    order_reference: "ORD-9001",
-    amount: "12999",
-    currency: "INR",
-    payment_method: "credit_card",
-    device_id: "device_risk_03",
-    card_number: "4000 0000 0000 1000",
-    expiry: "08/27",
-    cvv: "987",
-    billing_country: "IN",
-    ip_country: "AE",
-  },
-  international: {
-    customer_name: "Kabir Mehta",
-    customer_email: "kabir@example.com",
-    user_id: "user_intl",
-    order_reference: "ORD-3301",
-    amount: "3200",
-    currency: "INR",
-    payment_method: "credit_card",
-    device_id: "device_crossborder_12",
-    card_number: "5555 5555 5555 4444",
-    expiry: "10/29",
-    cvv: "456",
-    billing_country: "IN",
-    ip_country: "AE",
-  },
-};
-
 function formatCurrency(amount, currency = "INR") {
   const locale = currency === "INR" ? "en-IN" : "en-US";
   return new Intl.NumberFormat(locale, {
@@ -97,15 +34,6 @@ function setTimeline(steps) {
       `
     )
     .join("");
-}
-
-function setFormValues(values) {
-  Object.entries(values).forEach(([key, value]) => {
-    const field = form.elements.namedItem(key);
-    if (field) {
-      field.value = value;
-    }
-  });
 }
 
 function renderGatewayComparison(gateways) {
@@ -194,8 +122,8 @@ function renderResult(response, payment) {
         <strong>${gatewayText}</strong>
       </div>
       <div class="metric-card">
-        <span>Order</span>
-        <strong>${response.transaction?.order_reference || payment.order_reference}</strong>
+        <span>Attempt</span>
+        <strong>${response.transaction?.id || "-"}</strong>
       </div>
     </div>
 
@@ -207,6 +135,10 @@ function renderResult(response, payment) {
       <div class="meta-row">
         <span>Amount</span>
         <strong>${formatCurrency(payment.amount, payment.currency)}</strong>
+      </div>
+      <div class="meta-row">
+        <span>Customer Email</span>
+        <strong>${response.transaction?.customer_email || payment.customer_email}</strong>
       </div>
       <div class="meta-row">
         <span>Routing / Decision Reason</span>
@@ -225,21 +157,10 @@ function renderResult(response, payment) {
         <strong>${response.message}</strong>
       </div>
     </div>
-    ${
-      response.redirect_url
-        ? `
-          <div class="redirect-wrap">
-            <a href="${response.redirect_url}" class="redirect-link">
-              Open ${gatewayText} hosted checkout
-            </a>
-            <p class="redirect-copy">Continue the flow on the simulated gateway page to complete, fail, or reroute the payment.</p>
-          </div>
-        `
-        : ""
-    }
   `;
 
-  renderGatewayComparison(response.evaluated_gateways);
+  gatewayComparison.classList.add("hidden");
+  gatewayCards.innerHTML = "";
 }
 
 function renderDashboard(snapshot) {
@@ -308,8 +229,13 @@ function renderDashboard(snapshot) {
         .map(
           (attempt) => `
             <tr>
-              <td>${attempt.order_reference}</td>
-              <td>${attempt.user_id}</td>
+              <td>
+                <div>${attempt.id}</div>
+              </td>
+              <td>
+                <div>${attempt.customer_name || "-"}</div>
+                <div class="muted-inline">${attempt.customer_email || "-"}</div>
+              </td>
               <td><span class="table-status ${attempt.status}">${String(attempt.status).replaceAll("_", " ")}</span></td>
               <td>${attempt.selected_gateway || "-"}</td>
               <td>${Number(attempt.final_risk_score || 0).toFixed(4)}</td>
@@ -362,12 +288,6 @@ async function refreshDashboard() {
   }
 }
 
-document.querySelectorAll(".scenario-btn").forEach((button) => {
-  button.addEventListener("click", () => {
-    setFormValues(scenarios[button.dataset.scenario]);
-  });
-});
-
 document.querySelectorAll(".tab-btn").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach((item) => item.classList.remove("active"));
@@ -404,8 +324,8 @@ form.addEventListener("submit", async (event) => {
       state: "",
     },
     {
-      title: "Routing or review decision pending",
-      copy: "Approved payments will be routed. Medium risk will move to review. High risk will be blocked.",
+      title: "Decision pending",
+      copy: "Approved payments will be redirected to the best gateway. Medium risk will move to review. High risk will be blocked.",
       state: "",
     },
   ]);
@@ -428,7 +348,7 @@ form.addEventListener("submit", async (event) => {
       data.status === "blocked" ? "blocked" : data.status === "review_required" ? "review" : "success";
     const stepThreeCopy =
       data.status === "routed"
-        ? `${data.gateway_name || data.gateway} was selected as the best gateway.`
+        ? `Redirecting securely to ${data.gateway_name || data.gateway}.`
         : data.status === "review_required"
           ? "The payment was moved to a manual review state before gateway processing."
           : "The payment was blocked before gateway routing.";
@@ -436,7 +356,7 @@ form.addEventListener("submit", async (event) => {
     setTimeline([
       {
         title: "Payment attempt created",
-        copy: `Order ${data.transaction?.order_reference} is now tracked as a backend payment attempt.`,
+        copy: `Payment attempt ${data.transaction?.id} is now tracked for ${data.transaction?.customer_email}.`,
         state: "success",
       },
       {
@@ -449,7 +369,7 @@ form.addEventListener("submit", async (event) => {
       {
         title:
           data.status === "routed"
-            ? "Gateway selected"
+            ? "Redirecting to gateway"
             : data.status === "review_required"
               ? "Manual review required"
               : "Payment blocked",
@@ -457,6 +377,11 @@ form.addEventListener("submit", async (event) => {
         state: decisionState,
       },
     ]);
+
+    if (data.redirect_url) {
+      window.location.href = data.redirect_url;
+      return;
+    }
 
     renderResult(data, payment);
     refreshDashboard();

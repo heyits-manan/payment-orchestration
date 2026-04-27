@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Payment Orchestration Platform</title>
+    <title>Payment Console</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,19 +16,12 @@
     <div class="page-shell">
       <header class="hero">
         <div class="hero-copy glass">
-          <p class="eyebrow">Major Project • Full Workflow Build</p>
-          <h1>AI-Driven Payment Orchestration Platform</h1>
+          <p class="eyebrow">Payment Operations</p>
+          <h1>Payment Console</h1>
           <p class="hero-text">
-            A merchant-side payment system that creates payment attempts, scores fraud
-            risk, routes to the best gateway, supports fallback routing, and tracks the
-            full transaction lifecycle.
+            Create a payment, evaluate risk, route valid transactions, and monitor
+            recent activity from one workspace.
           </p>
-          <div class="hero-pills">
-            <span>Fraud Scoring</span>
-            <span>Gateway Routing</span>
-            <span>Fallback Handling</span>
-            <span>Analytics Dashboard</span>
-          </div>
         </div>
 
         <aside class="hero-panel glass">
@@ -75,7 +68,7 @@
                   <h2>Create Payment Attempt</h2>
                 </div>
                 <div class="inline-pills">
-                  <span class="mini-pill">Idempotent Order Flow</span>
+                  <span class="mini-pill">Email-Based User History</span>
                   <span class="mini-pill">Risk + Routing</span>
                 </div>
               </div>
@@ -89,14 +82,6 @@
                   <label>
                     <span>Customer Email</span>
                     <input type="email" name="customer_email" value="aarav@example.com" required />
-                  </label>
-                  <label>
-                    <span>User ID</span>
-                    <input type="text" name="user_id" value="user_123" required />
-                  </label>
-                  <label>
-                    <span>Order Reference</span>
-                    <input type="text" name="order_reference" value="ORD-1001" required />
                   </label>
                   <label>
                     <span>Amount (INR)</span>
@@ -152,13 +137,6 @@
                   </label>
                 </div>
 
-                <div class="quick-scenarios">
-                  <button type="button" class="scenario-btn" data-scenario="safe">Safe Scenario</button>
-                  <button type="button" class="scenario-btn" data-scenario="review">Review Scenario</button>
-                  <button type="button" class="scenario-btn" data-scenario="risk">Blocked Scenario</button>
-                  <button type="button" class="scenario-btn" data-scenario="international">International Scenario</button>
-                </div>
-
                 <button id="submitButton" class="submit-btn" type="submit">
                   Evaluate, Route, and Create Payment
                 </button>
@@ -200,33 +178,6 @@
               </div>
             </section>
           </div>
-
-          <section class="info-grid">
-            <article class="card glass mini-card">
-              <p class="panel-label">Lifecycle</p>
-              <h3>Tracked Payment Statuses</h3>
-              <p>
-                Each payment moves through `risk_pending`, `routed`, `review_required`,
-                `blocked`, `success`, or `failed`, with audit logs for each transition.
-              </p>
-            </article>
-            <article class="card glass mini-card">
-              <p class="panel-label">Fraud Logic</p>
-              <h3>Model Score + Rule Score</h3>
-              <p>
-                The platform combines ML prediction, velocity checks, country mismatch,
-                amount anomaly, payment method novelty, and device history.
-              </p>
-            </article>
-            <article class="card glass mini-card">
-              <p class="panel-label">Gateway Layer</p>
-              <h3>Routing With Fallback</h3>
-              <p>
-                Approved payments are ranked across providers and can automatically reroute
-                to the next gateway if the first hosted checkout fails.
-              </p>
-            </article>
-          </section>
         </section>
 
         <section id="view-operations" class="view-pane">
@@ -277,8 +228,8 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Order</th>
-                      <th>User</th>
+                      <th>Attempt</th>
+                      <th>Customer</th>
                       <th>Status</th>
                       <th>Gateway</th>
                       <th>Risk</th>

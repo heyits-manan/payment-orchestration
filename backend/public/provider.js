@@ -29,6 +29,7 @@ const providerThemes = {
 };
 
 let attemptId = null;
+let autoCompletionStarted = false;
 
 function getGatewayKey() {
   return window.location.pathname.split("/").pop();
@@ -87,6 +88,17 @@ async function loadAttempt() {
     }
     const details = await response.json();
     renderAttempt(details);
+    if (details.attempt.status === "routed" && !autoCompletionStarted) {
+      autoCompletionStarted = true;
+      showResult("Secure payment page loaded. Confirming payment automatically...", "warning");
+      setTimeout(() => {
+        completeAttempt("success");
+      }, 900);
+      return;
+    }
+    if (details.attempt.status === "success") {
+      showResult("Payment completed successfully.", "success");
+    }
   } catch (error) {
     showResult(error.message, "danger");
   }

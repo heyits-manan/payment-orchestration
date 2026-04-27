@@ -59,11 +59,7 @@
               </label>
             </form>
 
-            <div class="action-row">
-              <button type="button" class="pay-btn" data-outcome="success">Simulate Success</button>
-              <button type="button" class="pay-btn secondary" data-outcome="failed">Simulate Failure</button>
-              <button type="button" class="pay-btn tertiary" data-outcome="cancelled">Cancel Payment</button>
-            </div>
+            <div class="action-row hidden" id="actionRow"></div>
 
             <div id="gatewayResult" class="notice-box hidden"></div>
           </section>
@@ -74,7 +70,7 @@
             <dl class="summary-list">
               <div>
                 <dt>Merchant</dt>
-                <dd>AI Payment Orchestration Platform</dd>
+                <dd>Payment Console</dd>
               </div>
               <div>
                 <dt>Mode</dt>
