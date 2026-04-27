@@ -4,8 +4,8 @@ const {
   updateRecord,
   getRecordById,
   listRecords,
-  findPaymentAttemptByOrderReference,
   logAudit,
+  getOrCreateUserProfile,
 } = require("../storage");
 const { evaluateFraudRisk } = require("./fraudService");
 const { rankGatewayOptions } = require("./gatewayService");
@@ -21,7 +21,10 @@ function buildLegacyResponse(attempt, fraudDecision, selectedGateway, gatewayEva
     prediction: fraudDecision.model_prediction,
     gateway: selectedGateway ? selectedGateway.gateway_key : null,
     gateway_name: selectedGateway ? selectedGateway.gateway_name : null,
-    redirect_url: selectedGateway ? `/providers/${selectedGateway.gateway_key}?attempt_id=${attempt.id}` : null,
+    redirect_url:
+      selectedGateway && attempt.status === "routed"
+        ? `/providers/${selectedGateway.gateway_key}?attempt_id=${attempt.id}`
+        : null,
     routing_reason: selectedGateway ? selectedGateway.routing_reason : fraudDecision.decision_reason,
     gateway_score: selectedGateway ? selectedGateway.route_score : null,
     risk_adjustment_reasons: fraudDecision.rule_reasons,
@@ -32,6 +35,8 @@ function buildLegacyResponse(attempt, fraudDecision, selectedGateway, gatewayEva
       id: attempt.id,
       amount: attempt.amount,
       user_id: attempt.user_id,
+      customer_email: attempt.customer_email,
+      customer_name: attempt.customer_name,
       payment_method: attempt.payment_method,
       order_reference: attempt.order_reference,
     },
@@ -39,41 +44,30 @@ function buildLegacyResponse(attempt, fraudDecision, selectedGateway, gatewayEva
 }
 
 async function createPaymentAttempt(payment) {
-  const existing = await findPaymentAttemptByOrderReference(payment.order_reference);
-  if (existing) {
-    const fraudDecisionResult = await getRecordById("fraud_decisions", existing.fraud_decision_id);
-    const gatewayEvaluations = await listGatewayEvaluations(existing.id);
-    const selectedGateway = gatewayEvaluations.find((item) => item.selected) || null;
-
-    return {
-      duplicate: true,
-      attempt: existing,
-      response: buildLegacyResponse(
-        existing,
-        fraudDecisionResult.record || {},
-        selectedGateway,
-        gatewayEvaluations,
-        fraudDecisionResult.record?.history_summary || {}
-      ),
-    };
-  }
-
+  const userProfile = await getOrCreateUserProfile(payment.customer_name, payment.customer_email);
+  const resolvedPayment = {
+    ...payment,
+    user_id: userProfile.id,
+    customer_email: String(userProfile.customer_email || payment.customer_email).trim().toLowerCase(),
+    customer_name: userProfile.customer_name || payment.customer_name,
+    order_reference: createId("ord").toUpperCase(),
+  };
   const attemptId = createId("pay");
   const baseAttempt = {
     id: attemptId,
-    order_reference: payment.order_reference,
-    user_id: payment.user_id,
-    customer_name: payment.customer_name,
-    customer_email: payment.customer_email,
-    amount: payment.amount,
-    currency: payment.currency,
-    payment_method: payment.payment_method,
-    billing_country: payment.billing_country,
-    ip_country: payment.ip_country,
-    device_id: payment.device_id,
-    card_network: detectCardNetwork(payment.card_number),
-    card_last4: String(payment.card_number).replace(/\D/g, "").slice(-4),
-    masked_card: maskCard(payment.card_number),
+    order_reference: resolvedPayment.order_reference,
+    user_id: resolvedPayment.user_id,
+    customer_name: resolvedPayment.customer_name,
+    customer_email: resolvedPayment.customer_email,
+    amount: resolvedPayment.amount,
+    currency: resolvedPayment.currency,
+    payment_method: resolvedPayment.payment_method,
+    billing_country: resolvedPayment.billing_country,
+    ip_country: resolvedPayment.ip_country,
+    device_id: resolvedPayment.device_id,
+    card_network: detectCardNetwork(resolvedPayment.card_number),
+    card_last4: String(resolvedPayment.card_number).replace(/\D/g, "").slice(-4),
+    masked_card: maskCard(resolvedPayment.card_number),
     status: "risk_pending",
   };
 
@@ -84,8 +78,8 @@ async function createPaymentAttempt(payment) {
     event_message: "Payment attempt was created and queued for fraud evaluation.",
   });
 
-  const risk = await evaluateFraudRisk(payment);
-  const rankedGateways = rankGatewayOptions(payment, risk.finalRiskScore);
+  const risk = await evaluateFraudRisk(resolvedPayment);
+  const rankedGateways = rankGatewayOptions(resolvedPayment, risk.finalRiskScore);
   const selectedGateway = risk.decision.action === "approve_and_route" ? rankedGateways[0] : null;
   const fallbackGateways = selectedGateway ? rankedGateways.slice(1).map((item) => item.gateway_key) : [];
 

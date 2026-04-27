@@ -1,3 +1,14 @@
+create table if not exists public.users (
+  id text primary key,
+  customer_name text not null,
+  customer_email text not null unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+
+create index if not exists users_customer_email_idx
+  on public.users (customer_email);
+
 create table if not exists public.payment_attempts (
   id text primary key,
   order_reference text not null,

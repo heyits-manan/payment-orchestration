@@ -24,7 +24,6 @@ app.post("/process-payment", async (req, res) => {
   const legacyPayload = {
     customer_name: req.body.customer_name || "Demo Customer",
     customer_email: req.body.customer_email || "demo.customer@example.com",
-    order_reference: req.body.order_reference || `LEGACY-${Date.now()}`,
     card_number: req.body.card_number || "4111 1111 1111 1111",
     expiry: req.body.expiry || "12/28",
     cvv: req.body.cvv || "123",

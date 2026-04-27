@@ -8,12 +8,8 @@ function validateCheckoutPayload(payload = {}) {
     errors.push("customer_name is required");
   }
 
-  if (!payload.user_id || String(payload.user_id).trim().length < 3) {
-    errors.push("user_id is required");
-  }
-
-  if (!payload.order_reference || String(payload.order_reference).trim().length < 3) {
-    errors.push("order_reference is required");
+  if (!payload.customer_email || !String(payload.customer_email).includes("@")) {
+    errors.push("customer_email is required");
   }
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -42,8 +38,6 @@ function validateCheckoutPayload(payload = {}) {
     normalized: {
       customer_name: String(payload.customer_name || "").trim(),
       customer_email: String(payload.customer_email || "").trim(),
-      user_id: String(payload.user_id || "").trim(),
-      order_reference: String(payload.order_reference || "").trim(),
       amount,
       currency: String(payload.currency || "INR").trim().toUpperCase(),
       payment_method: String(payload.payment_method || "").trim(),

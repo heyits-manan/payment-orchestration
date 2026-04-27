@@ -5,6 +5,7 @@ const { LOCAL_STORE_PATH, STORAGE_DRIVER } = require("../config");
 const { createId, nowIso } = require("../utils/ids");
 
 const schema = {
+  users: [],
   payment_attempts: [],
   fraud_decisions: [],
   gateway_evaluations: [],
@@ -17,6 +18,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 let supabase = null;
 let supabaseLoadError = null;
+let lastSupabaseRuntimeError = null;
 
 if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && STORAGE_DRIVER !== "local") {
   try {
@@ -62,19 +64,35 @@ function getStorageStatus() {
     active_driver: supabase ? "supabase" : "local",
     supabase_configured: Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY),
     supabase_connected: Boolean(supabase),
+    strict_supabase: STORAGE_DRIVER === "supabase",
     local_store_path: LOCAL_STORE_PATH,
     load_error: supabaseLoadError ? supabaseLoadError.message : null,
+    runtime_error: lastSupabaseRuntimeError,
   };
 }
 
-async function useSupabase(operation, fallback) {
+function rememberSupabaseRuntimeError(context, error) {
+  lastSupabaseRuntimeError = `${context}: ${error.message}`;
+}
+
+async function useSupabase(operation, fallback, context) {
   if (!supabase) {
+    if (STORAGE_DRIVER === "supabase") {
+      const reason = supabaseLoadError
+        ? supabaseLoadError.message
+        : "Supabase client could not be initialized from the current environment.";
+      throw new Error(`Supabase storage is required but unavailable. ${reason}`);
+    }
     return fallback();
   }
 
   try {
     return await operation();
-  } catch (_error) {
+  } catch (error) {
+    rememberSupabaseRuntimeError(context, error);
+    if (STORAGE_DRIVER === "supabase") {
+      throw new Error(`Supabase ${context} failed: ${error.message}`);
+    }
     return fallback();
   }
 }
@@ -99,7 +117,8 @@ async function insertRecord(table, record) {
       store[table].push(enriched);
       writeLocalStore(store);
       return { source: "local", record: enriched };
-    }
+    },
+    `insert into ${table}`
   );
 }
 
@@ -130,7 +149,8 @@ async function updateRecord(table, id, patch) {
       };
       writeLocalStore(store);
       return { source: "local", record: store[table][index] };
-    }
+    },
+    `update ${table}.${id}`
   );
 }
 
@@ -146,7 +166,8 @@ async function listRecords(table) {
     async () => {
       const store = readLocalStore();
       return { source: "local", records: store[table] || [] };
-    }
+    },
+    `select from ${table}`
   );
 }
 
@@ -165,19 +186,47 @@ async function getRecordById(table, id) {
         source: "local",
         record: (store[table] || []).find((item) => item.id === id) || null,
       };
-    }
+    },
+    `select ${table}.${id}`
   );
 }
 
-async function findPaymentAttemptByOrderReference(orderReference) {
-  const { records } = await listRecords("payment_attempts");
+async function findUserByEmail(email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  const { records } = await listRecords("users");
   return (
     records.find(
-      (item) =>
-        item.order_reference === orderReference &&
-        !["failed", "cancelled", "success"].includes(item.status)
+      (item) => String(item.customer_email || "").trim().toLowerCase() === normalizedEmail
     ) || null
   );
+}
+
+async function getOrCreateUserProfile(customerName, customerEmail) {
+  const normalizedEmail = String(customerEmail || "").trim().toLowerCase();
+  const normalizedName = String(customerName || "").trim();
+  const existing = await findUserByEmail(normalizedEmail);
+
+  if (existing) {
+    if (normalizedName && existing.customer_name !== normalizedName) {
+      const updated = await updateRecord("users", existing.id, {
+        customer_name: normalizedName,
+      });
+      return updated.record || existing;
+    }
+    return existing;
+  }
+
+  return (
+    await insertRecord("users", {
+      id: createId("usr"),
+      customer_name: normalizedName,
+      customer_email: normalizedEmail,
+    })
+  ).record;
 }
 
 async function listPaymentAttempts(limit = 50) {
@@ -190,20 +239,78 @@ async function listPaymentAttempts(limit = 50) {
 
 async function fetchUserTransactionSummary(userId) {
   const { records } = await listRecords("payment_attempts");
-  const since = Date.now() - 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const oneHourAgo = now - 60 * 60 * 1000;
+  const threeHoursAgo = now - 3 * 60 * 60 * 1000;
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
   const userRecords = records
     .filter((record) => record.user_id === userId)
-    .filter((record) => new Date(record.created_at).getTime() >= since);
-
-  const totalAmount = userRecords.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-  const successful = userRecords.filter((row) => row.status === "success");
+    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
+  const userRecords24h = userRecords.filter(
+    (record) => new Date(record.created_at).getTime() >= oneDayAgo
+  );
+  const userRecords1h = userRecords.filter(
+    (record) => new Date(record.created_at).getTime() >= oneHourAgo
+  );
+  const userRecords3h = userRecords.filter(
+    (record) => new Date(record.created_at).getTime() >= threeHoursAgo
+  );
+  const historicalRecords = userRecords.filter((row) =>
+    ["success", "routed", "review_required", "blocked", "failed"].includes(row.status)
+  );
+  const successful = historicalRecords.filter((row) => row.status === "success");
+  const baselineRecords = successful.length ? successful : historicalRecords;
+  const baselineTotal = baselineRecords.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const avgAmount = baselineRecords.length ? baselineTotal / baselineRecords.length : 0;
+  const sortedBaselineAmounts = baselineRecords
+    .map((row) => Number(row.amount || 0))
+    .filter((amount) => amount > 0)
+    .sort((left, right) => left - right);
+  const medianAmount = sortedBaselineAmounts.length
+    ? sortedBaselineAmounts[Math.floor(sortedBaselineAmounts.length / 2)]
+    : 0;
+  const baselineAmount = medianAmount || avgAmount;
+  const highValueThreshold = baselineAmount > 0 ? baselineAmount * 3 : 0;
+  const highValueTransactions24h =
+    highValueThreshold > 0
+      ? userRecords24h.filter((row) => Number(row.amount || 0) >= highValueThreshold).length
+      : 0;
+  const highValueTransactions3h =
+    highValueThreshold > 0
+      ? userRecords3h.filter((row) => Number(row.amount || 0) >= highValueThreshold).length
+      : 0;
+  const recentAmounts = userRecords24h.map((row) => Number(row.amount || 0));
+  const countryMismatch3h = userRecords3h.filter(
+    (row) =>
+      String(row.billing_country || "").toUpperCase() &&
+      String(row.ip_country || "").toUpperCase() &&
+      String(row.billing_country || "").toUpperCase() !== String(row.ip_country || "").toUpperCase()
+  ).length;
 
   return {
-    source: supabase ? "supabase_or_local_fallback" : "local",
-    transactions24h: userRecords.length,
-    blocked24h: userRecords.filter((row) => row.status === "blocked").length,
-    failed24h: userRecords.filter((row) => row.status === "failed").length,
-    avgAmount: userRecords.length ? totalAmount / userRecords.length : 0,
+    source:
+      STORAGE_DRIVER === "supabase"
+        ? "supabase"
+        : supabase
+          ? "supabase_or_local_fallback"
+          : "local",
+    lifetimeTransactions: userRecords.length,
+    baselineTransactionCount: baselineRecords.length,
+    transactions1h: userRecords1h.length,
+    transactions3h: userRecords3h.length,
+    transactions24h: userRecords24h.length,
+    countryMismatch3h,
+    uniqueDevices3h: new Set(userRecords3h.map((row) => row.device_id).filter(Boolean)).size,
+    uniqueIpCountries3h: new Set(userRecords3h.map((row) => String(row.ip_country || "").toUpperCase()).filter(Boolean)).size,
+    highValueTransactions3h,
+    highValueTransactions24h,
+    highValueThreshold,
+    maxAmount24h: recentAmounts.length ? Math.max(...recentAmounts) : 0,
+    blocked24h: userRecords24h.filter((row) => row.status === "blocked").length,
+    failed24h: userRecords24h.filter((row) => row.status === "failed").length,
+    avgAmount,
+    medianAmount,
+    baselineAmount,
     successfulAvgAmount: successful.length
       ? successful.reduce((sum, row) => sum + Number(row.amount || 0), 0) / successful.length
       : 0,
@@ -317,8 +424,9 @@ module.exports = {
   getRecordById,
   listRecords,
   listPaymentAttempts,
-  findPaymentAttemptByOrderReference,
   fetchUserTransactionSummary,
   logAudit,
   getDashboardSnapshot,
+  findUserByEmail,
+  getOrCreateUserProfile,
 };
