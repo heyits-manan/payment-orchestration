@@ -1,7 +1,150 @@
 {
-  "payment_attempts": [],
-  "fraud_decisions": [],
-  "gateway_evaluations": [],
-  "gateway_transactions": [],
-  "audit_logs": []
+  "payment_attempts": [
+    {
+      "id": "pay_adbf84902ba3",
+      "created_at": "2026-04-27T12:09:22.769Z",
+      "order_reference": "ORD-1001",
+      "user_id": "user_123",
+      "customer_name": "Aarav Sharma",
+      "customer_email": "aarav@example.com",
+      "amount": 1499,
+      "currency": "INR",
+      "payment_method": "credit_card",
+      "billing_country": "IN",
+      "ip_country": "IN",
+      "device_id": "device_india_01",
+      "card_network": "visa",
+      "card_last4": "1111",
+      "masked_card": "•••• •••• •••• 1111",
+      "status": "routed",
+      "final_risk_score": 0.0567,
+      "ml_risk_score": 0.0267,
+      "rule_risk_score": 0.03,
+      "fraud_decision_id": "fraud_decision_563e08f4db39",
+      "selected_gateway": "gateway_alpha",
+      "fallback_gateways": [
+        "gateway_flux",
+        "gateway_orbit"
+      ],
+      "decision_summary": "Payment approved and routed to Gateway Alpha.",
+      "current_gateway_index": 0,
+      "updated_at": "2026-04-27T12:09:23.210Z"
+    }
+  ],
+  "fraud_decisions": [
+    {
+      "id": "fraud_decision_563e08f4db39",
+      "created_at": "2026-04-27T12:09:23.106Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "model_score": 0.0267,
+      "rule_score": 0.03,
+      "final_risk_score": 0.0567,
+      "model_prediction": 0,
+      "model_service_status": "online",
+      "decision_action": "approve_and_route",
+      "decision_reason": "Fraud risk is within the auto-approval band.",
+      "rule_reasons": [],
+      "history_summary": {
+        "source": "supabase_or_local_fallback",
+        "transactions24h": 1,
+        "blocked24h": 0,
+        "failed24h": 0,
+        "avgAmount": 1499,
+        "successfulAvgAmount": 0,
+        "lastTransactionAmount": 1499,
+        "billingCountries": [
+          "IN"
+        ],
+        "ipCountries": [
+          "IN"
+        ],
+        "paymentMethods": [
+          "credit_card"
+        ],
+        "devices": [
+          "device_india_01"
+        ]
+      },
+      "hard_threshold": 0.8,
+      "review_threshold": 0.55
+    }
+  ],
+  "gateway_evaluations": [
+    {
+      "id": "gateway_evaluation_5a055e834c40",
+      "created_at": "2026-04-27T12:09:23.210Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "gateway_key": "gateway_flux",
+      "gateway_name": "Gateway Flux",
+      "success_rate": 93.8,
+      "avg_latency_ms": 215,
+      "fee_bps": 218,
+      "health_score": 92.66,
+      "route_score": 1.3865,
+      "supports_international": true,
+      "selected": false,
+      "fallback_rank": 1,
+      "routing_reason": "Balanced cost and success-rate route."
+    },
+    {
+      "id": "gateway_evaluation_25a2f4b691af",
+      "created_at": "2026-04-27T12:09:23.210Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "gateway_key": "gateway_orbit",
+      "gateway_name": "Gateway Orbit",
+      "success_rate": 94.74,
+      "avg_latency_ms": 255,
+      "fee_bps": 218,
+      "health_score": 94.49,
+      "route_score": 1.347,
+      "supports_international": true,
+      "selected": false,
+      "fallback_rank": 2,
+      "routing_reason": "Balanced cost and success-rate route."
+    },
+    {
+      "id": "gateway_evaluation_204184da1767",
+      "created_at": "2026-04-27T12:09:23.210Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "gateway_key": "gateway_alpha",
+      "gateway_name": "Gateway Alpha",
+      "success_rate": 96.52,
+      "avg_latency_ms": 197,
+      "fee_bps": 220,
+      "health_score": 92.56,
+      "route_score": 1.4466,
+      "supports_international": false,
+      "selected": true,
+      "fallback_rank": 0,
+      "routing_reason": "Balanced cost and success-rate route."
+    }
+  ],
+  "gateway_transactions": [
+    {
+      "id": "gateway_transaction_38c89fe2d988",
+      "created_at": "2026-04-27T12:09:23.747Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "gateway_key": "gateway_alpha",
+      "gateway_name": "Gateway Alpha",
+      "gateway_reference": "gateway_alpha_b2ade14157cb",
+      "status": "processing",
+      "fallback_rank": 0
+    }
+  ],
+  "audit_logs": [
+    {
+      "id": "audit_log_6f9c11e217f3",
+      "created_at": "2026-04-27T12:09:22.912Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "event_type": "payment_attempt_created",
+      "event_message": "Payment attempt was created and queued for fraud evaluation."
+    },
+    {
+      "id": "audit_log_66b06d7b4ec7",
+      "created_at": "2026-04-27T12:09:23.794Z",
+      "payment_attempt_id": "pay_adbf84902ba3",
+      "event_type": "fraud_decision_completed",
+      "event_message": "Payment approved and routed to Gateway Alpha."
+    }
+  ]
 }
