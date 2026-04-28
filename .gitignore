@@ -27,5 +27,6 @@ ml-service/fraud_model.pkl
 *.log
 
 # Archives / large local files
+online_payment.csv
 creditcard.csv
 kaggle_credit_card_dataset.zip

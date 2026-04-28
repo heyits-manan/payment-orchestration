@@ -20,6 +20,11 @@ function formatCurrency(amount, currency = "INR") {
   }).format(Number(amount || 0));
 }
 
+function shortId(value = "") {
+  const text = String(value || "");
+  return text.length > 14 ? `${text.slice(0, 10)}...` : text || "-";
+}
+
 function setTimeline(steps) {
   timeline.innerHTML = steps
     .map(
@@ -28,7 +33,7 @@ function setTimeline(steps) {
           <span class="step-dot"></span>
           <div>
             <strong>${step.title}</strong>
-            <p>${step.copy}</p>
+            ${step.copy ? `<p>${step.copy}</p>` : ""}
           </div>
         </div>
       `
@@ -52,20 +57,15 @@ function renderGatewayComparison(gateways) {
             <h4>${gateway.gateway_name}</h4>
             <span class="gateway-rank">#${Number(gateway.fallback_rank ?? 0) + 1}</span>
           </div>
-          <p class="gateway-copy">${gateway.routing_reason || "Ranked for routing."}</p>
           <dl>
-            <dt>Route score</dt>
+            <dt>Score</dt>
             <dd>${Number(gateway.route_score).toFixed(4)}</dd>
-            <dt>Success rate</dt>
+            <dt>Success</dt>
             <dd>${gateway.success_rate}%</dd>
             <dt>Latency</dt>
             <dd>${gateway.avg_latency_ms} ms</dd>
             <dt>Fee</dt>
             <dd>${gateway.fee_bps} bps</dd>
-            <dt>Health</dt>
-            <dd>${gateway.health_score}</dd>
-            <dt>Intl support</dt>
-            <dd>${gateway.supports_international ? "Yes" : "No"}</dd>
           </dl>
         </article>
       `
@@ -76,10 +76,7 @@ function renderGatewayComparison(gateways) {
 function renderEmpty() {
   resultPanel.className = "result-panel empty";
   resultPanel.innerHTML = `
-    <p class="empty-title">No payment processed yet</p>
-    <p class="empty-copy">
-      This panel will show the model score, rule score, final decision, and routing outcome.
-    </p>
+    <p class="empty-title">No payment yet</p>
   `;
   gatewayComparison.classList.add("hidden");
   gatewayCards.innerHTML = "";
@@ -95,8 +92,9 @@ function renderResult(response, payment) {
   const gatewayText = response.gateway_name || response.gateway || "Not routed";
   const riskReasons =
     Array.isArray(response.risk_adjustment_reasons) && response.risk_adjustment_reasons.length
-      ? response.risk_adjustment_reasons.join(", ")
+      ? response.risk_adjustment_reasons.slice(0, 2).join(", ")
       : "None";
+  const decisionReason = response.routing_reason || response.message || "No routing performed.";
 
   resultPanel.className = "result-panel";
   resultPanel.innerHTML = `
@@ -106,15 +104,15 @@ function renderResult(response, payment) {
         <strong>${String(response.status).replaceAll("_", " ").toUpperCase()}</strong>
       </div>
       <div class="metric-card">
-        <span>Final Risk Score</span>
+        <span>Risk</span>
         <strong>${Number(response.fraud_score || 0).toFixed(4)}</strong>
       </div>
       <div class="metric-card">
-        <span>Model Score</span>
+        <span>Model</span>
         <strong>${Number(response.model_fraud_score || 0).toFixed(4)}</strong>
       </div>
       <div class="metric-card">
-        <span>Rule Score</span>
+        <span>Rules</span>
         <strong>${Number(response.rule_score || 0).toFixed(4)}</strong>
       </div>
       <div class="metric-card">
@@ -122,8 +120,8 @@ function renderResult(response, payment) {
         <strong>${gatewayText}</strong>
       </div>
       <div class="metric-card">
-        <span>Attempt</span>
-        <strong>${response.transaction?.id || "-"}</strong>
+        <span>Amount</span>
+        <strong>${formatCurrency(payment.amount, payment.currency)}</strong>
       </div>
     </div>
 
@@ -133,28 +131,16 @@ function renderResult(response, payment) {
         <strong>${payment.customer_name}</strong>
       </div>
       <div class="meta-row">
-        <span>Amount</span>
-        <strong>${formatCurrency(payment.amount, payment.currency)}</strong>
+        <span>Attempt</span>
+        <strong>${shortId(response.transaction?.id)}</strong>
       </div>
       <div class="meta-row">
-        <span>Customer Email</span>
-        <strong>${response.transaction?.customer_email || payment.customer_email}</strong>
+        <span>Decision</span>
+        <strong>${decisionReason}</strong>
       </div>
       <div class="meta-row">
-        <span>Routing / Decision Reason</span>
-        <strong>${response.routing_reason || response.message || "No gateway routing was performed."}</strong>
-      </div>
-      <div class="meta-row">
-        <span>Risk Adjustments</span>
+        <span>Signals</span>
         <strong>${riskReasons}</strong>
-      </div>
-      <div class="meta-row">
-        <span>Recent User History</span>
-        <strong>${response.history_summary?.transactions24h || 0} transactions in the last 24h</strong>
-      </div>
-      <div class="meta-row">
-        <span>Message</span>
-        <strong>${response.message}</strong>
       </div>
     </div>
   `;
@@ -166,12 +152,12 @@ function renderResult(response, payment) {
 function renderDashboard(snapshot) {
   const summary = snapshot.summary || {};
   const cards = [
-    ["Total Transactions", summary.total_transactions || 0],
-    ["Approval Rate", `${Number((summary.approval_rate || 0) * 100).toFixed(1)}%`],
-    ["Success Rate", `${Number((summary.success_rate || 0) * 100).toFixed(1)}%`],
-    ["Review Queue", summary.review_transactions || 0],
+    ["Transactions", summary.total_transactions || 0],
+    ["Approved", `${Number((summary.approval_rate || 0) * 100).toFixed(1)}%`],
+    ["Success", `${Number((summary.success_rate || 0) * 100).toFixed(1)}%`],
+    ["Review", summary.review_transactions || 0],
     ["Blocked", summary.blocked_transactions || 0],
-    ["Total Volume", formatCurrency(summary.total_volume || 0, "INR")],
+    ["Volume", formatCurrency(summary.total_volume || 0, "INR")],
   ];
 
   summaryCards.innerHTML = cards
@@ -207,14 +193,14 @@ function renderDashboard(snapshot) {
             <article class="gateway-card">
               <div class="card-topline">
                 <h4>${gateway.gateway_name}</h4>
-                <span class="gateway-rank">${gateway.selected_count} selections</span>
+                <span class="gateway-rank">${gateway.selected_count} selected</span>
               </div>
               <dl>
                 <dt>Evaluations</dt>
                 <dd>${gateway.evaluated_count}</dd>
-                <dt>Average latency</dt>
+                <dt>Latency</dt>
                 <dd>${gateway.avg_latency_ms} ms</dd>
-                <dt>Average success rate</dt>
+                <dt>Success</dt>
                 <dd>${gateway.avg_success_rate}%</dd>
               </dl>
             </article>
@@ -230,7 +216,7 @@ function renderDashboard(snapshot) {
           (attempt) => `
             <tr>
               <td>
-                <div>${attempt.id}</div>
+                <div title="${attempt.id}">${shortId(attempt.id)}</div>
               </td>
               <td>
                 <div>${attempt.customer_name || "-"}</div>
@@ -248,7 +234,7 @@ function renderDashboard(snapshot) {
 }
 
 async function refreshHealth() {
-  healthBadge.textContent = "Checking backend...";
+  healthBadge.textContent = "Checking";
   healthBadge.className = "health-pill pending";
 
   try {
@@ -258,14 +244,12 @@ async function refreshHealth() {
     }
 
     const data = await response.json();
-    healthBadge.textContent = "Backend healthy";
+    healthBadge.textContent = "Online";
     healthBadge.className = "health-pill healthy";
-    document.getElementById("healthMl").textContent = data.ml_service_url || "Unknown";
+    document.getElementById("healthMl").textContent = data.ml_service_url ? "Connected" : "Unknown";
     document.getElementById("healthStorage").textContent = data.storage?.active_driver || "Unknown";
-    document.getElementById("healthThreshold").textContent = data.fraud_threshold;
-    document.getElementById("healthReview").textContent = data.review_threshold;
   } catch (_error) {
-    healthBadge.textContent = "Backend offline";
+    healthBadge.textContent = "Offline";
     healthBadge.className = "health-pill unhealthy";
     document.getElementById("healthMl").textContent = "Unavailable";
     document.getElementById("healthStorage").textContent = "Unavailable";
@@ -310,22 +294,19 @@ form.addEventListener("submit", async (event) => {
   };
 
   submitButton.disabled = true;
-  submitButton.textContent = "Creating payment...";
+  submitButton.textContent = "Evaluating...";
 
   setTimeline([
     {
-      title: "Payment attempt created",
-      copy: "The merchant backend is validating the order and creating a payment attempt.",
+      title: "Creating payment",
       state: "active",
     },
     {
-      title: "Fraud scoring in progress",
-      copy: "ML scoring and rule evaluation are being combined into a final risk decision.",
+      title: "Scoring risk",
       state: "",
     },
     {
-      title: "Decision pending",
-      copy: "Approved payments will be redirected to the best gateway. Medium risk will move to review. High risk will be blocked.",
+      title: "Routing",
       state: "",
     },
   ]);
@@ -348,22 +329,22 @@ form.addEventListener("submit", async (event) => {
       data.status === "blocked" ? "blocked" : data.status === "review_required" ? "review" : "success";
     const stepThreeCopy =
       data.status === "routed"
-        ? `Redirecting securely to ${data.gateway_name || data.gateway}.`
+        ? data.gateway_name || data.gateway
         : data.status === "review_required"
-          ? "The payment was moved to a manual review state before gateway processing."
-          : "The payment was blocked before gateway routing.";
+          ? "Manual review"
+          : "Blocked";
 
     setTimeline([
       {
-        title: "Payment attempt created",
-        copy: `Payment attempt ${data.transaction?.id} is now tracked for ${data.transaction?.customer_email}.`,
+        title: "Payment created",
+        copy: shortId(data.transaction?.id),
         state: "success",
       },
       {
-        title: "Fraud scoring complete",
-        copy: `Model score ${Number(data.model_fraud_score || 0).toFixed(4)}, rule score ${Number(
+        title: `Risk ${Number(data.fraud_score || 0).toFixed(4)}`,
+        copy: `Model ${Number(data.model_fraud_score || 0).toFixed(4)} | Rules ${Number(
           data.rule_score || 0
-        ).toFixed(4)}, final risk ${Number(data.fraud_score || 0).toFixed(4)}.`,
+        ).toFixed(4)}`,
         state: decisionState === "blocked" ? "blocked" : decisionState === "review" ? "review" : "success",
       },
       {
@@ -398,7 +379,7 @@ form.addEventListener("submit", async (event) => {
     resultPanel.innerHTML = `
       <div class="metric-card status-blocked">
         <span>Request Failed</span>
-        <strong>Backend or dependency unavailable</strong>
+        <strong>Unavailable</strong>
       </div>
       <div class="result-meta" style="margin-top:16px">
         <div class="meta-row">
@@ -411,11 +392,10 @@ form.addEventListener("submit", async (event) => {
     gatewayCards.innerHTML = "";
   } finally {
     submitButton.disabled = false;
-    submitButton.textContent = "Evaluate, Route, and Create Payment";
+    submitButton.textContent = "Evaluate Payment";
   }
 });
 
 renderEmpty();
-setFormValues(scenarios.safe);
 refreshHealth();
 refreshDashboard();

@@ -18,36 +18,24 @@
         <div class="hero-copy glass">
           <p class="eyebrow">Payment Operations</p>
           <h1>Payment Console</h1>
-          <p class="hero-text">
-            Create a payment, evaluate risk, route valid transactions, and monitor
-            recent activity from one workspace.
-          </p>
         </div>
 
         <aside class="hero-panel glass">
           <div class="section-head compact">
             <div>
-              <p class="panel-label">System Health</p>
-              <h2>Runtime Status</h2>
+              <p class="panel-label">System</p>
+              <h2>Status</h2>
             </div>
-            <span id="healthBadge" class="health-pill pending">Checking backend...</span>
+            <span id="healthBadge" class="health-pill pending">Checking</span>
           </div>
           <dl id="healthList" class="summary-stack">
             <div>
               <dt>ML Service</dt>
-              <dd id="healthMl">Loading...</dd>
+              <dd id="healthMl">Loading</dd>
             </div>
             <div>
               <dt>Storage</dt>
-              <dd id="healthStorage">Loading...</dd>
-            </div>
-            <div>
-              <dt>Hard Threshold</dt>
-              <dd id="healthThreshold">-</dd>
-            </div>
-            <div>
-              <dt>Review Band</dt>
-              <dd id="healthReview">-</dd>
+              <dd id="healthStorage">Loading</dd>
             </div>
           </dl>
         </aside>
@@ -65,11 +53,7 @@
               <div class="section-head">
                 <div>
                   <p class="panel-label">Merchant Checkout</p>
-                  <h2>Create Payment Attempt</h2>
-                </div>
-                <div class="inline-pills">
-                  <span class="mini-pill">Email-Based User History</span>
-                  <span class="mini-pill">Risk + Routing</span>
+                  <h2>New Payment</h2>
                 </div>
               </div>
 
@@ -77,15 +61,15 @@
                 <div class="field-grid">
                   <label>
                     <span>Customer Name</span>
-                    <input type="text" name="customer_name" value="Aarav Sharma" required />
+                    <input type="text" name="customer_name" required />
                   </label>
                   <label>
                     <span>Customer Email</span>
-                    <input type="email" name="customer_email" value="aarav@example.com" required />
+                    <input type="email" name="customer_email" required />
                   </label>
                   <label>
                     <span>Amount (INR)</span>
-                    <input type="number" name="amount" min="1" step="0.01" value="1499" required />
+                    <input type="number" name="amount" min="1" step="0.01" required />
                   </label>
                   <label>
                     <span>Currency</span>
@@ -117,28 +101,10 @@
                     <span>CVV</span>
                     <input type="password" name="cvv" value="123" required />
                   </label>
-                  <label>
-                    <span>Billing Country</span>
-                    <select name="billing_country">
-                      <option value="IN" selected>India</option>
-                      <option value="US">United States</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="AE">UAE</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>IP Country</span>
-                    <select name="ip_country">
-                      <option value="IN" selected>India</option>
-                      <option value="US">United States</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="AE">UAE</option>
-                    </select>
-                  </label>
                 </div>
 
                 <button id="submitButton" class="submit-btn" type="submit">
-                  Evaluate, Route, and Create Payment
+                  Evaluate Payment
                 </button>
               </form>
             </section>
@@ -146,8 +112,8 @@
             <section class="card glass output-card">
               <div class="section-head">
                 <div>
-                  <p class="panel-label">Decision Engine</p>
-                  <h2>Fraud and Routing Decision</h2>
+                  <p class="panel-label">Decision</p>
+                  <h2>Risk and Routing</h2>
                 </div>
               </div>
 
@@ -155,24 +121,19 @@
                 <div class="timeline-step">
                   <span class="step-dot"></span>
                   <div>
-                    <strong>Waiting for request</strong>
-                    <p>Submit a payment to create a lifecycle-managed payment attempt.</p>
+                    <strong>Ready</strong>
                   </div>
                 </div>
               </div>
 
               <div id="resultPanel" class="result-panel empty">
-                <p class="empty-title">No payment processed yet</p>
-                <p class="empty-copy">
-                  This panel will show the model score, rule score, final risk, and the
-                  selected payment gateway or review/block decision.
-                </p>
+                <p class="empty-title">No payment yet</p>
               </div>
 
               <div id="gatewayComparison" class="gateway-comparison hidden">
                 <div class="comparison-head">
                   <p class="panel-label">Gateway Comparison</p>
-                  <h3>Ranked Providers</h3>
+                  <h3>Providers</h3>
                 </div>
                 <div id="gatewayCards" class="gateway-cards"></div>
               </div>
@@ -185,11 +146,11 @@
             <section class="card glass">
               <div class="section-head">
                 <div>
-                  <p class="panel-label">Operations Summary</p>
-                  <h2>Merchant Analytics</h2>
+                  <p class="panel-label">Summary</p>
+                  <h2>Analytics</h2>
                 </div>
                 <button id="refreshDashboardButton" type="button" class="ghost-btn">
-                  Refresh Metrics
+                  Refresh
                 </button>
               </div>
               <div id="summaryCards" class="summary-cards"></div>
@@ -198,8 +159,8 @@
             <section class="card glass">
               <div class="section-head">
                 <div>
-                  <p class="panel-label">Fraud Insights</p>
-                  <h2>Top Risk Reasons</h2>
+                  <p class="panel-label">Risk</p>
+                  <h2>Top Reasons</h2>
                 </div>
               </div>
               <div id="fraudReasons" class="reason-list"></div>
@@ -210,8 +171,8 @@
             <section class="card glass">
               <div class="section-head">
                 <div>
-                  <p class="panel-label">Gateway Performance</p>
-                  <h2>Selection and Reliability</h2>
+                  <p class="panel-label">Gateways</p>
+                  <h2>Performance</h2>
                 </div>
               </div>
               <div id="gatewayPerformance" class="gateway-cards dashboard-cards"></div>
@@ -220,8 +181,8 @@
             <section class="card glass">
               <div class="section-head">
                 <div>
-                  <p class="panel-label">Recent Payments</p>
-                  <h2>Transaction Lifecycle Feed</h2>
+                  <p class="panel-label">Payments</p>
+                  <h2>Recent Activity</h2>
                 </div>
               </div>
               <div class="table-wrap">

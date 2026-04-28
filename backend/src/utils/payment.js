@@ -31,7 +31,8 @@ function maskCard(cardNumber = "") {
   return `•••• •••• •••• ${digits.slice(-4)}`;
 }
 
-function buildFeatureVector(amount, userId, paymentMethod, billingCountry = "IN", ipCountry = "IN") {
+function buildOnlinePaymentFeatures(amount, userId, paymentMethod, billingCountry = "IN", ipCountry = "IN") {
+  const numericAmount = Number(amount) || 0;
   let hash = 0;
   for (const ch of String(userId)) {
     hash = (hash * 31 + ch.charCodeAt(0)) & 0xffffffff;
@@ -42,32 +43,38 @@ function buildFeatureVector(amount, userId, paymentMethod, billingCountry = "IN"
     return x - Math.floor(x);
   };
 
-  const methodMap = {
-    credit_card: 1,
-    debit_card: 2,
-    upi: 3,
-    net_banking: 4,
-    wallet: 5,
-  };
-  const methodCode = methodMap[paymentMethod] || 0;
   const isInternational =
     String(billingCountry).toUpperCase() !== String(ipCountry).toUpperCase();
-  const amountRiskBoost =
-    amount >= 8000 ? 2.8 : amount >= 4000 ? 1.6 : amount >= 1500 ? 0.7 : 0;
+  const normalizedMethod = String(paymentMethod || "").toLowerCase();
+  const type =
+    normalizedMethod === "net_banking" || isInternational || numericAmount >= 100000
+      ? "TRANSFER"
+      : "PAYMENT";
+  const balanceMultiplier = 1.05 + pseudoRandom(2) * 2.5;
+  const oldbalanceOrg = Math.max(numericAmount, numericAmount * balanceMultiplier);
+  const newbalanceOrig =
+    type === "TRANSFER" && (isInternational || numericAmount >= 100000)
+      ? 0
+      : Math.max(0, oldbalanceOrg - numericAmount);
+  const oldbalanceDest =
+    type === "TRANSFER"
+      ? Math.round(numericAmount * (0.25 + pseudoRandom(3) * 1.5) * 100) / 100
+      : 0;
+  const newbalanceDest =
+    type === "TRANSFER" ? Math.max(0, oldbalanceDest + numericAmount) : oldbalanceDest;
 
-  const features = new Array(30).fill(0);
-  features[0] = Date.now() % 172800;
-  features[29] = Number(amount);
-
-  for (let i = 1; i <= 28; i += 1) {
-    features[i] =
-      (pseudoRandom(i) - 0.5) * 4 +
-      amountRiskBoost * (i % 3 === 0 ? -1.25 : 0.85) +
-      methodCode * 0.1 * (i % 5 === 0 ? 1 : 0) +
-      (isInternational ? (i % 4 === 0 ? -2.2 : 1.1) : 0);
-  }
-
-  return features;
+  return {
+    step: Math.max(1, Math.floor((Date.now() / (60 * 60 * 1000)) % 744)),
+    type,
+    amount: numericAmount,
+    nameOrig: `C${Math.abs(hash)}`,
+    oldbalanceOrg: Number(oldbalanceOrg.toFixed(2)),
+    newbalanceOrig: Number(newbalanceOrig.toFixed(2)),
+    nameDest: type === "TRANSFER" ? `C${Math.abs(hash + 17)}` : `M${Math.abs(hash + 17)}`,
+    oldbalanceDest: Number(oldbalanceDest.toFixed(2)),
+    newbalanceDest: Number(newbalanceDest.toFixed(2)),
+    isFlaggedFraud: numericAmount >= 200000 ? 1 : 0,
+  };
 }
 
 module.exports = {
@@ -75,5 +82,5 @@ module.exports = {
   normalizeCountry,
   detectCardNetwork,
   maskCard,
-  buildFeatureVector,
+  buildOnlinePaymentFeatures,
 };

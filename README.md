@@ -88,7 +88,7 @@ Major Project/
 | Frontend | HTML, CSS, Vanilla JS |
 | Backend API | Node.js, Express |
 | ML API | Python, Flask |
-| ML Model | scikit-learn Random Forest |
+| ML Model | scikit-learn gradient boosting model trained on `online_payment.csv` |
 | Storage | Local JSON or Supabase |
 
 ## Setup
@@ -104,7 +104,7 @@ python train_model.py
 If the dataset is stored elsewhere:
 
 ```bash
-DATASET_PATH=/absolute/path/to/creditcard.csv python train_model.py
+DATASET_PATH=/absolute/path/to/online_payment.csv python train_model.py
 ```
 
 ### 2. Start the ML service

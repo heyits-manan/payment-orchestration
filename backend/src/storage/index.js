@@ -243,6 +243,35 @@ async function fetchUserTransactionSummary(userId) {
   const oneHourAgo = now - 60 * 60 * 1000;
   const threeHoursAgo = now - 3 * 60 * 60 * 1000;
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  const historicalStatuses = ["success", "routed", "review_required", "blocked", "failed", "cancelled"];
+  const riskyStatuses = ["review_required", "blocked"];
+  const isRiskyRecord = (row) =>
+    riskyStatuses.includes(row.status) || Number(row.final_risk_score || 0) >= 0.75;
+  const summarizeByKey = (rows, keyGetter) =>
+    rows.reduce((summary, row) => {
+      const key = String(keyGetter(row) || "").trim().toUpperCase();
+      if (!key) {
+        return summary;
+      }
+      const stats =
+        summary[key] || {
+          transactions: 0,
+          blocked: 0,
+          review: 0,
+          failed: 0,
+          success: 0,
+          high_risk: 0,
+        };
+      stats.transactions += 1;
+      stats.blocked += row.status === "blocked" ? 1 : 0;
+      stats.review += row.status === "review_required" ? 1 : 0;
+      stats.failed += row.status === "failed" ? 1 : 0;
+      stats.success += row.status === "success" ? 1 : 0;
+      stats.high_risk += isRiskyRecord(row) ? 1 : 0;
+      summary[key] = stats;
+      return summary;
+    }, {});
+
   const userRecords = records
     .filter((record) => record.user_id === userId)
     .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
@@ -255,8 +284,15 @@ async function fetchUserTransactionSummary(userId) {
   const userRecords3h = userRecords.filter(
     (record) => new Date(record.created_at).getTime() >= threeHoursAgo
   );
-  const historicalRecords = userRecords.filter((row) =>
-    ["success", "routed", "review_required", "blocked", "failed"].includes(row.status)
+  const historicalRecords = userRecords.filter((row) => historicalStatuses.includes(row.status));
+  const historicalRecords24h = historicalRecords.filter(
+    (record) => new Date(record.created_at).getTime() >= oneDayAgo
+  );
+  const historicalRecords1h = historicalRecords.filter(
+    (record) => new Date(record.created_at).getTime() >= oneHourAgo
+  );
+  const historicalRecords3h = historicalRecords.filter(
+    (record) => new Date(record.created_at).getTime() >= threeHoursAgo
   );
   const successful = historicalRecords.filter((row) => row.status === "success");
   const baselineRecords = successful.length ? successful : historicalRecords;
@@ -286,6 +322,18 @@ async function fetchUserTransactionSummary(userId) {
       String(row.ip_country || "").toUpperCase() &&
       String(row.billing_country || "").toUpperCase() !== String(row.ip_country || "").toUpperCase()
   ).length;
+  const blocked24h = historicalRecords24h.filter((row) => row.status === "blocked").length;
+  const review24h = historicalRecords24h.filter((row) => row.status === "review_required").length;
+  const failed24h = historicalRecords24h.filter((row) => row.status === "failed").length;
+  const blocked3h = historicalRecords3h.filter((row) => row.status === "blocked").length;
+  const review3h = historicalRecords3h.filter((row) => row.status === "review_required").length;
+  const failed3h = historicalRecords3h.filter((row) => row.status === "failed").length;
+  const blockedLifetime = historicalRecords.filter((row) => row.status === "blocked").length;
+  const reviewLifetime = historicalRecords.filter((row) => row.status === "review_required").length;
+  const failedLifetime = historicalRecords.filter((row) => row.status === "failed").length;
+  const riskyDecisions24h = historicalRecords24h.filter(isRiskyRecord).length;
+  const riskyDecisions3h = historicalRecords3h.filter(isRiskyRecord).length;
+  const riskyDecisionsLifetime = historicalRecords.filter(isRiskyRecord).length;
 
   return {
     source:
@@ -295,10 +343,14 @@ async function fetchUserTransactionSummary(userId) {
           ? "supabase_or_local_fallback"
           : "local",
     lifetimeTransactions: userRecords.length,
+    historicalTransactions: historicalRecords.length,
     baselineTransactionCount: baselineRecords.length,
     transactions1h: userRecords1h.length,
     transactions3h: userRecords3h.length,
     transactions24h: userRecords24h.length,
+    previousTransactions1h: historicalRecords1h.length,
+    previousTransactions3h: historicalRecords3h.length,
+    previousTransactions24h: historicalRecords24h.length,
     countryMismatch3h,
     uniqueDevices3h: new Set(userRecords3h.map((row) => row.device_id).filter(Boolean)).size,
     uniqueIpCountries3h: new Set(userRecords3h.map((row) => String(row.ip_country || "").toUpperCase()).filter(Boolean)).size,
@@ -306,8 +358,24 @@ async function fetchUserTransactionSummary(userId) {
     highValueTransactions24h,
     highValueThreshold,
     maxAmount24h: recentAmounts.length ? Math.max(...recentAmounts) : 0,
-    blocked24h: userRecords24h.filter((row) => row.status === "blocked").length,
-    failed24h: userRecords24h.filter((row) => row.status === "failed").length,
+    blocked24h,
+    review24h,
+    failed24h,
+    blocked3h,
+    review3h,
+    failed3h,
+    blockedLifetime,
+    reviewLifetime,
+    failedLifetime,
+    riskyDecisions24h,
+    riskyDecisions3h,
+    riskyDecisionsLifetime,
+    riskyDecisionRate: historicalRecords.length
+      ? Number((riskyDecisionsLifetime / historicalRecords.length).toFixed(4))
+      : 0,
+    failureRate: historicalRecords.length
+      ? Number((failedLifetime / historicalRecords.length).toFixed(4))
+      : 0,
     avgAmount,
     medianAmount,
     baselineAmount,
@@ -315,10 +383,16 @@ async function fetchUserTransactionSummary(userId) {
       ? successful.reduce((sum, row) => sum + Number(row.amount || 0), 0) / successful.length
       : 0,
     lastTransactionAmount: userRecords.length ? Number(userRecords[0].amount || 0) : 0,
-    billingCountries: [...new Set(userRecords.map((row) => String(row.billing_country || "").toUpperCase()).filter(Boolean))],
-    ipCountries: [...new Set(userRecords.map((row) => String(row.ip_country || "").toUpperCase()).filter(Boolean))],
-    paymentMethods: [...new Set(userRecords.map((row) => row.payment_method).filter(Boolean))],
-    devices: [...new Set(userRecords.map((row) => row.device_id).filter(Boolean))],
+    billingCountries: [...new Set(historicalRecords.map((row) => String(row.billing_country || "").toUpperCase()).filter(Boolean))],
+    ipCountries: [...new Set(historicalRecords.map((row) => String(row.ip_country || "").toUpperCase()).filter(Boolean))],
+    paymentMethods: [...new Set(historicalRecords.map((row) => row.payment_method).filter(Boolean))],
+    devices: [...new Set(historicalRecords.map((row) => row.device_id).filter(Boolean))],
+    cardLast4s: [...new Set(historicalRecords.map((row) => row.card_last4).filter(Boolean))],
+    cardLast4Stats24h: summarizeByKey(historicalRecords24h, (row) => row.card_last4),
+    deviceStats24h: summarizeByKey(historicalRecords24h, (row) => row.device_id),
+    billingCountryStats24h: summarizeByKey(historicalRecords24h, (row) => row.billing_country),
+    ipCountryStats24h: summarizeByKey(historicalRecords24h, (row) => row.ip_country),
+    paymentMethodStats24h: summarizeByKey(historicalRecords24h, (row) => row.payment_method),
   };
 }
 
