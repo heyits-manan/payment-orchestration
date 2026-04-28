@@ -16,7 +16,7 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 from sklearn.model_selection import train_test_split
 
@@ -131,20 +131,18 @@ def train_and_save_model():
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
-    fraud_rate = max(float(y_train.mean()), 1e-8)
-    sample_weight = np.where(y_train.to_numpy() == 1, 1.0 / fraud_rate, 1.0).astype(np.float32)
     print(f"      Train size    : {len(X_train)}")
     print(f"      Test size     : {len(X_test)}")
 
-    print("\n[4/5] Training HistGradientBoostingClassifier ...")
-    model = HistGradientBoostingClassifier(
-        learning_rate=0.08,
-        max_iter=160,
-        max_leaf_nodes=31,
-        l2_regularization=0.1,
+    print("\n[4/5] Training RandomForestClassifier ...")
+    model = RandomForestClassifier(
+        n_estimators=100,
+        max_depth=12,
         random_state=42,
+        n_jobs=-1,
+        class_weight="balanced_subsample",
     )
-    model.fit(X_train, y_train, sample_weight=sample_weight)
+    model.fit(X_train, y_train)
 
     print("\n[5/5] Evaluation")
     y_pred = model.predict(X_test)

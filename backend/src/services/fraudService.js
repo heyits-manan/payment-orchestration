@@ -3,7 +3,7 @@ const { ML_SERVICE_URL, FRAUD_THRESHOLD, REVIEW_THRESHOLD } = require("../config
 const { fetchUserTransactionSummary } = require("../storage");
 const { buildOnlinePaymentFeatures } = require("../utils/payment");
 
-const REVIEW_AMOUNT_THRESHOLD = 100000;
+const REVIEW_AMOUNT_THRESHOLD = 1000000;
 const HARD_BLOCK_AMOUNT_THRESHOLD = 5100000;
 const FIRST_TRANSACTION_REVIEW_AMOUNT_THRESHOLD = 2000000;
 const FIRST_TRANSACTION_BLOCK_AMOUNT_THRESHOLD = 5100000;
